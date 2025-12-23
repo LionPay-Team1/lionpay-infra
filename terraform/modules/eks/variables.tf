@@ -1,17 +1,18 @@
-variable "project_name" {
-  type = string
-}
-
-variable "env" {
-  type = string
-}
-
 variable "cluster_name" {
   type = string
 }
 
 variable "kubernetes_version" {
   type = string
+}
+
+variable "aws_region" {
+  type = string
+}
+
+variable "cluster_endpoint_public_access" {
+  type    = bool
+  default = true
 }
 
 variable "vpc_id" {
@@ -22,27 +23,46 @@ variable "private_subnet_ids" {
   type = list(string)
 }
 
-variable "node_groups" {
-  type = map(any)
-}
-
 variable "enable_karpenter" {
   type    = bool
   default = true
 }
 
-variable "argocd_capability_role_arn" {
-  description = "IAM Role ARN for EKS ArgoCD capability"
-  type        = string
+variable "karpenter_discovery_tag" {
+  type = string
 }
 
-variable "idc_instance_arn" {
-  description = "IAM Identity Center instance ARN (arn:aws:sso:::instance/...)"
-  type        = string
+variable "karpenter_controller_ami_type" {
+  type    = string
+  default = "BOTTLEROCKET_ARM_64"
 }
 
-variable "argocd_namespace" {
-  description = "Namespace to install ArgoCD into"
-  type        = string
-  default     = "argocd"
+variable "karpenter_controller_instance_types" {
+  type    = list(string)
+  default = ["t4g.medium"]
+}
+
+variable "karpenter_controller_capacity_type" {
+  type    = string
+  default = "ON_DEMAND"
+}
+
+variable "karpenter_controller_min_size" {
+  type    = number
+  default = 1
+}
+
+variable "karpenter_controller_max_size" {
+  type    = number
+  default = 3
+}
+
+variable "karpenter_controller_desired_size" {
+  type    = number
+  default = 1
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {}
 }
