@@ -92,11 +92,11 @@ locals {
 }
 
 module "karpenter" {
-  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.24"
+  source = "terraform-aws-modules/eks/aws//modules/karpenter"
+  # version = "~> 20.24"
 
   cluster_name          = var.cluster_name
-  enable_v1_permissions = true
+  # enable_v1_permissions = true
   namespace             = var.namespace
 
   node_iam_role_use_name_prefix   = false
@@ -150,15 +150,17 @@ resource "helm_release" "karpenter" {
     ]
   }
 }
-
 resource "kubernetes_manifest" "karpenter_node_class" {
   manifest = local.node_class
 
-  depends_on = [helm_release.karpenter]
+  depends_on = [
+    helm_release.karpenter
+  ]
 }
-
 resource "kubernetes_manifest" "karpenter_node_pool" {
   manifest = local.node_pool
 
-  depends_on = [helm_release.karpenter]
+  depends_on = [
+    kubernetes_manifest.karpenter_node_class
+  ]
 }

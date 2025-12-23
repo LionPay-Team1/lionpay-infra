@@ -10,13 +10,6 @@ locals {
     Environment = var.env
   })
 
-  aurora_subnet_ids = var.aurora_subnet_ids != null ? var.aurora_subnet_ids : module.vpc_service_seoul.private_subnets
-  aurora_vpc_id     = var.aurora_vpc_id != null ? var.aurora_vpc_id : module.vpc_service_seoul.vpc_id
-  aurora_cidrs      = var.aurora_allowed_cidr_blocks != null ? var.aurora_allowed_cidr_blocks : [module.vpc_service_seoul.vpc_cidr_block]
-}
-
-data "aws_ecrpublic_authorization_token" "token" {
-  provider = aws.ecr
 }
 
 data "aws_eks_cluster_auth" "admin_seoul" {
@@ -30,6 +23,15 @@ data "aws_eks_cluster_auth" "service_seoul" {
 data "aws_eks_cluster_auth" "service_tokyo" {
   provider = aws.tokyo
   name     = module.eks_service_tokyo.cluster_name
+}
+
+data "aws_ecrpublic_authorization_token" "token" {
+  provider = aws.ecrpublic
+}
+
+locals {
+  ecrpublic_auth     = base64decode(data.aws_ecrpublic_authorization_token.token.authorization_token)
+  ecrpublic_password = split(":", local.ecrpublic_auth)[1]
 }
 
 module "vpc_admin_seoul" {
@@ -138,8 +140,7 @@ module "eks_service_tokyo" {
 }
 
 module "eks_blueprints_addons_admin_seoul" {
-  source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.16"
+  source = "aws-ia/eks-blueprints-addons/aws"
   providers = {
     aws        = aws
     helm       = helm.admin_seoul
@@ -151,15 +152,13 @@ module "eks_blueprints_addons_admin_seoul" {
   cluster_version   = module.eks_admin_seoul.cluster_version
   oidc_provider_arn = module.eks_admin_seoul.oidc_provider_arn
 
-  enable_aws_ebs_csi_driver = true
   enable_metrics_server     = true
 
   tags = local.tags
 }
 
 module "eks_blueprints_addons_service_seoul" {
-  source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.16"
+  source = "aws-ia/eks-blueprints-addons/aws"
   providers = {
     aws        = aws
     helm       = helm.service_seoul
@@ -171,15 +170,13 @@ module "eks_blueprints_addons_service_seoul" {
   cluster_version   = module.eks_service_seoul.cluster_version
   oidc_provider_arn = module.eks_service_seoul.oidc_provider_arn
 
-  enable_aws_ebs_csi_driver = true
   enable_metrics_server     = true
 
   tags = local.tags
 }
 
 module "eks_blueprints_addons_service_tokyo" {
-  source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.16"
+  source = "aws-ia/eks-blueprints-addons/aws"
   providers = {
     aws        = aws.tokyo
     helm       = helm.service_tokyo
@@ -191,7 +188,6 @@ module "eks_blueprints_addons_service_tokyo" {
   cluster_version   = module.eks_service_tokyo.cluster_version
   oidc_provider_arn = module.eks_service_tokyo.oidc_provider_arn
 
-  enable_aws_ebs_csi_driver = true
   enable_metrics_server     = true
 
   tags = local.tags
@@ -199,6 +195,8 @@ module "eks_blueprints_addons_service_tokyo" {
 
 module "karpenter_admin_seoul" {
   count  = var.admin_enable_karpenter ? 1 : 0
+  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token.password
   source = "../../modules/karpenter"
   providers = {
     aws        = aws
@@ -222,70 +220,68 @@ module "karpenter_admin_seoul" {
   consolidation_policy = var.karpenter_consolidation_policy
   consolidate_after   = var.karpenter_consolidate_after
   chart_version       = var.karpenter_chart_version
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
   tags                = local.tags
 }
 
-module "karpenter_service_seoul" {
-  count  = var.service_seoul_enable_karpenter ? 1 : 0
-  source = "../../modules/karpenter"
-  providers = {
-    aws        = aws
-    helm       = helm.service_seoul
-    kubernetes = kubernetes.service_seoul
-  }
+# module "karpenter_service_seoul" {
+#   count  = var.service_seoul_enable_karpenter ? 1 : 0
+#   source = "../../modules/karpenter"
+#   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+#   repository_password = data.aws_ecrpublic_authorization_token.token.password
+#   providers = {
+#     aws        = aws
+#     helm       = helm.service_seoul
+#     kubernetes = kubernetes.service_seoul
+#   }
 
-  cluster_name        = module.eks_service_seoul.cluster_name
-  cluster_endpoint    = module.eks_service_seoul.cluster_endpoint
-  node_iam_role_name  = local.service_seoul_cluster_name
-  node_class_name     = var.karpenter_node_class_name
-  node_pool_name      = var.karpenter_node_pool_name
-  ami_alias           = var.karpenter_ami_alias
-  discovery_tag       = local.service_seoul_cluster_name
-  instance_categories = var.karpenter_instance_categories
-  instance_cpus       = var.karpenter_instance_cpus
-  instance_generations = var.karpenter_instance_generations
-  capacity_types      = var.karpenter_capacity_types
-  architectures       = var.karpenter_architectures
-  node_pool_cpu_limit = var.karpenter_node_pool_cpu_limit
-  consolidation_policy = var.karpenter_consolidation_policy
-  consolidate_after   = var.karpenter_consolidate_after
-  chart_version       = var.karpenter_chart_version
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
-  tags                = local.tags
-}
+#   cluster_name        = module.eks_service_seoul.cluster_name
+#   cluster_endpoint    = module.eks_service_seoul.cluster_endpoint
+#   node_iam_role_name  = local.service_seoul_cluster_name
+#   node_class_name     = var.karpenter_node_class_name
+#   node_pool_name      = var.karpenter_node_pool_name
+#   ami_alias           = var.karpenter_ami_alias
+#   discovery_tag       = local.service_seoul_cluster_name
+#   instance_categories = var.karpenter_instance_categories
+#   instance_cpus       = var.karpenter_instance_cpus
+#   instance_generations = var.karpenter_instance_generations
+#   capacity_types      = var.karpenter_capacity_types
+#   architectures       = var.karpenter_architectures
+#   node_pool_cpu_limit = var.karpenter_node_pool_cpu_limit
+#   consolidation_policy = var.karpenter_consolidation_policy
+#   consolidate_after   = var.karpenter_consolidate_after
+#   chart_version       = var.karpenter_chart_version
+#   tags                = local.tags
+# }
 
-module "karpenter_service_tokyo" {
-  count  = var.service_tokyo_enable_karpenter ? 1 : 0
-  source = "../../modules/karpenter"
-  providers = {
-    aws        = aws.tokyo
-    helm       = helm.service_tokyo
-    kubernetes = kubernetes.service_tokyo
-  }
+# module "karpenter_service_tokyo" {
+#   count  = var.service_tokyo_enable_karpenter ? 1 : 0
+#   source = "../../modules/karpenter"
+#   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+#   repository_password = data.aws_ecrpublic_authorization_token.token.password
+#   providers = {
+#     aws        = aws.tokyo
+#     helm       = helm.service_tokyo
+#     kubernetes = kubernetes.service_tokyo
+#   }
 
-  cluster_name        = module.eks_service_tokyo.cluster_name
-  cluster_endpoint    = module.eks_service_tokyo.cluster_endpoint
-  node_iam_role_name  = local.service_tokyo_cluster_name
-  node_class_name     = var.karpenter_node_class_name
-  node_pool_name      = var.karpenter_node_pool_name
-  ami_alias           = var.karpenter_ami_alias
-  discovery_tag       = local.service_tokyo_cluster_name
-  instance_categories = var.karpenter_instance_categories
-  instance_cpus       = var.karpenter_instance_cpus
-  instance_generations = var.karpenter_instance_generations
-  capacity_types      = var.karpenter_capacity_types
-  architectures       = var.karpenter_architectures
-  node_pool_cpu_limit = var.karpenter_node_pool_cpu_limit
-  consolidation_policy = var.karpenter_consolidation_policy
-  consolidate_after   = var.karpenter_consolidate_after
-  chart_version       = var.karpenter_chart_version
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
-  tags                = local.tags
-}
+#   cluster_name        = module.eks_service_tokyo.cluster_name
+#   cluster_endpoint    = module.eks_service_tokyo.cluster_endpoint
+#   node_iam_role_name  = local.service_tokyo_cluster_name
+#   node_class_name     = var.karpenter_node_class_name
+#   node_pool_name      = var.karpenter_node_pool_name
+#   ami_alias           = var.karpenter_ami_alias
+#   discovery_tag       = local.service_tokyo_cluster_name
+#   instance_categories = var.karpenter_instance_categories
+#   instance_cpus       = var.karpenter_instance_cpus
+#   instance_generations = var.karpenter_instance_generations
+#   capacity_types      = var.karpenter_capacity_types
+#   architectures       = var.karpenter_architectures
+#   node_pool_cpu_limit = var.karpenter_node_pool_cpu_limit
+#   consolidation_policy = var.karpenter_consolidation_policy
+#   consolidate_after   = var.karpenter_consolidate_after
+#   chart_version       = var.karpenter_chart_version
+#   tags                = local.tags
+# }
 
 module "dynamodb" {
   source = "../../modules/dynamodb"
@@ -301,25 +297,15 @@ module "dynamodb" {
   tags                    = local.tags
 }
 
-module "aurora_dsql" {
-  source = "../../modules/aurora_dsql"
+module "dsql" {
+  source = "../../modules/dsql"
 
-  cluster_identifier     = var.aurora_cluster_identifier
-  database_name          = var.aurora_database_name
-  master_username        = var.aurora_master_username
-  master_password        = var.aurora_master_password
-  engine                 = var.aurora_engine
-  engine_version         = var.aurora_engine_version
-  instance_class         = var.aurora_instance_class
-  instance_count         = var.aurora_instance_count
-  backup_retention_period = var.aurora_backup_retention_period
-  deletion_protection    = var.aurora_deletion_protection
-  subnet_group_name      = "${local.name_prefix}-aurora-subnets"
-  subnet_ids             = local.aurora_subnet_ids
-  security_group_name    = "${local.name_prefix}-aurora-sg"
-  vpc_id                 = local.aurora_vpc_id
-  allowed_cidr_blocks    = local.aurora_cidrs
-  tags                   = local.tags
+  deletion_protection_enabled = var.dsql_deletion_protection_enabled
+  force_destroy               = var.dsql_force_destroy
+  kms_encryption_key          = var.dsql_kms_encryption_key
+  witness_region              = var.dsql_witness_region
+  region                      = var.dsql_region
+  tags                        = local.tags
 }
 
 module "s3" {

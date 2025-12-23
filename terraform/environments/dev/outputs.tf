@@ -26,8 +26,12 @@ output "dynamodb_table_arn" {
   value = module.dynamodb.table_arn
 }
 
-output "aurora_cluster_endpoint" {
-  value = module.aurora_dsql.cluster_endpoint
+output "dsql_cluster_identifier" {
+  value = module.dsql.identifier
+}
+
+output "dsql_vpc_endpoint_service_name" {
+  value = module.dsql.vpc_endpoint_service_name
 }
 
 output "s3_bucket_name" {

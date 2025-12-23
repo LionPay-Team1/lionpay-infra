@@ -21,16 +21,15 @@ locals {
 }
 
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.24"
+  source = "terraform-aws-modules/eks/aws"
 
-  cluster_name    = var.cluster_name
-  cluster_version = var.kubernetes_version
+  name               = var.cluster_name
+  kubernetes_version = var.kubernetes_version
 
   enable_cluster_creator_admin_permissions = true
-  cluster_endpoint_public_access           = var.cluster_endpoint_public_access
+  endpoint_public_access                   = var.cluster_endpoint_public_access
 
-  cluster_addons = {
+  addons = {
     coredns = length(local.coredns_tolerations) > 0 ? {
       configuration_values = jsonencode({
         tolerations = local.coredns_tolerations

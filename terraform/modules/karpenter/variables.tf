@@ -79,12 +79,19 @@ variable "chart_version" {
   default = "1.0.2"
 }
 
+variable "apply_kubernetes_resources" {
+  type    = bool
+  default = true
+}
+
 variable "repository_username" {
-  type = string
+  type    = string
+  default = null
 }
 
 variable "repository_password" {
-  type = string
+  type    = string
+  default = null
 }
 
 variable "tags" {

@@ -224,6 +224,11 @@ variable "karpenter_chart_version" {
   default = "1.0.2"
 }
 
+variable "karpenter_apply_k8s_resources" {
+  type    = bool
+  default = false
+}
+
 variable "dynamodb_table_name" {
   type = string
 }
@@ -262,65 +267,26 @@ variable "dynamodb_deletion_protection" {
   default = false
 }
 
-variable "aurora_cluster_identifier" {
-  type = string
-}
-
-variable "aurora_database_name" {
-  type    = string
-  default = null
-}
-
-variable "aurora_master_username" {
-  type = string
-}
-
-variable "aurora_master_password" {
-  type      = string
-  sensitive = true
-}
-
-variable "aurora_engine" {
-  type    = string
-  default = "aurora-postgresql"
-}
-
-variable "aurora_engine_version" {
-  type    = string
-  default = null
-}
-
-variable "aurora_instance_class" {
-  type    = string
-  default = "db.r6g.large"
-}
-
-variable "aurora_instance_count" {
-  type    = number
-  default = 1
-}
-
-variable "aurora_backup_retention_period" {
-  type    = number
-  default = 1
-}
-
-variable "aurora_deletion_protection" {
+variable "dsql_deletion_protection_enabled" {
   type    = bool
   default = false
 }
 
-variable "aurora_allowed_cidr_blocks" {
-  type    = list(string)
+variable "dsql_force_destroy" {
+  type    = bool
+  default = false
+}
+
+variable "dsql_kms_encryption_key" {
+  type    = string
   default = null
 }
 
-variable "aurora_subnet_ids" {
-  type    = list(string)
-  default = null
+variable "dsql_witness_region" {
+  type = string
 }
 
-variable "aurora_vpc_id" {
+variable "dsql_region" {
   type    = string
   default = null
 }
