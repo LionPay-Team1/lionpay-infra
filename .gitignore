@@ -8,6 +8,8 @@
 *.tfplan.*
 crash.log
 crash.*.log
+.terraform.lock.hcl
+
 
 # Kubernetes
 .kube/
@@ -18,3 +20,4 @@ kubeconfig.*
 
 # Examples
 .example/
+
