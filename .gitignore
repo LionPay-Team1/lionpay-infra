@@ -1,6 +1,25 @@
-﻿*.tfstate
-*.tfstate.*
+# Terraform
 .terraform/
+*.tfstate
+*.tfstate.*
 *.tfvars
 *.tfvars.json
+*.tfplan
+*.tfplan.*
 crash.log
+crash.*.log
+.terraform.lock.hcl
+
+# Helm
+.helm/
+
+# Kubernetes
+.kube/
+kubeconfig
+kubeconfig.*
+*.kubeconfig
+*.kubeconfig.*
+
+# Examples
+.example/
+
