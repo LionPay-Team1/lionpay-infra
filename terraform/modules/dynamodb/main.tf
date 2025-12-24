@@ -17,6 +17,17 @@ resource "aws_dynamodb_table" "this" {
     }
   }
 
+  stream_enabled   = length(var.replica_regions) > 0 ? true : null
+  stream_view_type = length(var.replica_regions) > 0 ? "NEW_AND_OLD_IMAGES" : null
+
+  dynamic "replica" {
+    for_each = var.replica_regions
+    content {
+      region_name = replica.value.region_name
+      kms_key_arn = replica.value.kms_key_arn
+    }
+  }
+
   point_in_time_recovery {
     enabled = var.point_in_time_recovery
   }

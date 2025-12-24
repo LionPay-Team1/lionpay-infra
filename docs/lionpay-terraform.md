@@ -1,69 +1,66 @@
-# Lionpay Terraform (IaC) 설계 문서 (1)
+# Lionpay Terraform (IaC) 설계 문서
 
 ## 1. 개요 (Overview)
 
-본 문서는 `Lionpay` 서비스의 AWS 인프라를 Terraform으로 구축하기 위한 설계 명세서이다. 관리 효율성을 위해 환경별 단일 계층 구조(Single Layer per Environment)를 채택하며, Terraform Cloud를 통해 상태를 관리한다.
+본 문서는 Lionpay 서비스의 AWS 인프라를 Terraform으로 구축하기 위한 설계 명세서이다. 관리 효율성을 위해 **환경별 단일 계층 구조(Single Layer per Environment)**를 채택하며, Terraform Cloud를 통해 상태를 관리한다.
 
-**주요 아키텍처 특징:**
+### 주요 아키텍처 특징
 
-- **Multi-Region & Multi-VPC:** 서울 리전의 **Admin VPC**를 허브로, 서울/도쿄 리전의 **Service VPC**를 스포크로 연결하여 관리와 서비스를 물리적으로 격리한다.
-- **EKS Auto Mode:** 모든 워크로드는 ARM(Graviton) 기반의 EKS Auto Mode 클러스터에서 구동된다.
-- **Global Gateway:** Route 53 지연 시간 기반 라우팅(Latency Routing)과 CloudFront를 결합하여 전역 트래픽 가속 및 최적 경로 접속을 보장한다.
-- **SaaS Monitoring:** Grafana Cloud를 도입함에 따라 Admin 클러스터는 모니터링 서버 호스팅 부담 없이 **GitOps(ArgoCD)** 컨트롤 플레인 역할에 집중한다.
+- **Hub-and-Spoke Cluster**: 서울 리전 클러스터가 Hub(ArgoCD) 역할을 겸임하며, 도쿄 리전 클러스터(Spoke)를 통합 관리한다.
+- **EKS Auto Mode**: 모든 워크로드는 ARM(Graviton) 기반의 EKS Auto Mode 클러스터에서 구동된다.
+- **Global Gateway**: Route 53 지연 시간 기반 라우팅(Latency Routing)과 CloudFront를 결합하여 전역 트래픽 가속 및 최적 경로 접속을 보장한다.
+- **SaaS Monitoring**: Grafana Cloud를 도입하여 별도의 모니터링 서버 구축 없이 에이전트 기반으로 데이터를 전송한다.
 
 ## 2. 저장소 구조 (Repository Structure)
 
 단일 실행으로 멀티 리전 리소스를 프로비저닝하기 위해 `environments` 하위 파일에서 복수의 프로바이더를 호출한다.
 
-```
+```text
 lionpay-infra/
 ├── .github/workflows/             # GitHub Actions (Terraform Plan/Apply)
 ├── k8s/                           # ArgoCD Apps & Helm Charts
 └── terraform/
-    ├── modules/                   # [Resource Modules] - 재사용 가능한 리소스 정의
-    │   ├── network/               # VPC, Subnet, Peering, NAT Gateway
-    │   ├── database/              # DynamoDB(Global), Aurora DSQL
-    │   ├── eks/                   # EKS (Auto Mode & Custom NodePool)
-    │   ├── iam/
-    │   ├── ecr/
-    │   ├── security-group/
-    │   └── gateway/               # [Global Resources] CloudFront, Route53, ACM, WAF
-    │       ├── main.tf            # Route 53 Latency Record & CloudFront 정의
-    │       ├── variables.tf       # 도메인 및 리전별 ALB DNS 변수
-    │       └── outputs.tf         # CloudFront Domain, DNS 정보 출력
+    ├── modules/                   # [Resource Modules]
+    │   ├── vpc/                   # VPC, Subnet, Flow Logs
+    │   ├── eks/                   # EKS Cluster, Karpenter, NodePools
+    │   ├── dynamodb/              # DynamoDB Tables (Multi-Region)
+    │   ├── dsql/                  # Amazon Aurora DSQL (Seoul, Tokyo, Osaka)
+    │   ├── ecr/                   # ECR Repositories
+    │   └── s3/                    # S3 Buckets
     │
-    └── environments/              # [Deployable Units] - 실제 환경별 실행 디렉토리
+    └── environments/              # [Deployable Units]
         ├── dev/                   # TFC Workspace: lionpay-dev
-        │   ├── main.tf            # Admin(Seoul) & Service(Seoul/Tokyo) 통합 호출
-        │   ├── providers.tf       # Seoul/Tokyo/Virginia(ACM용) 프로바이더 정의
+        │   ├── main.tf            # 전역 로직 및 데이터 소스
+        │   ├── vpc.tf             # 서울 & 도쿄 VPC 정의
+        │   ├── eks.tf             # 서울 & 도쿄 EKS 정의
+        │   ├── dsql.tf            # Aurora DSQL 멀티 리전 클러스터
+        │   ├── dynamodb.tf        # DynamoDB 글로벌 테이블
+        │   ├── s3.tf              # 공통 S3 버킷
+        │   ├── providers.tf       # 서울/도쿄/오사카/ECR-Public 프로바이더
         │   ├── variables.tf
-        │   ├── outputs.tf
-        │   └── terraform.tfvars
-        └── prod/                  # TFC Workspace: lionpay-prod
-            ├── main.tf
-            ├── providers.tf
-            ├── variables.tf
-            ├── outputs.tf
-            └── terraform.tfvars
-
+        │   ├── terraform.tfvars
+        │   └── outputs.tf
+        ├── prod/                  # TFC Workspace: lionpay-prod (추후 구성)
+        └── ecr/                   # TFC Workspace: lionpay-common-ecr
+            ├── main.tf            # 전역 서비스용 ECR 리포지토리 정의
+            ├── providers.tf       # 멀티 리전(서울/도쿄) 프로바이더
+            └── versions.tf
 ```
 
-## 3. 상태 관리 및 멀티 리전 연동 (State & Region Wiring)
+## 3. 리소스 격리 및 상태 관리 (Isolation Strategy)
 
-### 3.1. 프로바이더 구성 (Multi-Region Providers)
+### 3.1. ECR 독립 관리 (Shared Infrastructure)
 
-`providers.tf` 파일에 서울, 도쿄, 버지니아(ACM 인증서용) 리전의 프로바이더를 정의한다.
+서비스 컨테이너 이미지를 저장하는 **ECR(Elastic Container Registry)**은 특정 환경(`dev`, `prod`)의 생명주기에 종속되지 않도록 별도의 워크스페이스에서 관리한다.
 
-```
-terraform {
-  cloud {
-    organization = "lionpay-org"
-    workspaces {
-      name = "lionpay-dev"
-    }
-  }
-}
+- **이유**: 환경 파괴 및 재구축 시에도 이미지는 보존되어야 하며, `dev`에서 빌드된 이미지를 `prod`에서 즉시 참조할 수 있는 구조를 확보하기 위함이다.
+- **범위**: 서울 및 도쿄 리전의 모든 마이크로서비스(`auth`, `wallet` 등) 리포지토리.
 
+### 3.2. 프로바이더 구성 (Multi-Region Providers)
+
+`providers.tf` 파일에 서울, 도쿄, 오사카(Witness), ECR Public 리전의 프로바이더를 정의한다.
+
+```hcl
 provider "aws" {
   alias  = "seoul"
   region = "ap-northeast-2"
@@ -75,160 +72,87 @@ provider "aws" {
 }
 
 provider "aws" {
-  alias  = "virginia" # CloudFront ACM 전용
+  alias  = "osaka" # DSQL 멀티-리전 Witness 용
+  region = "ap-northeast-3"
+}
+
+provider "aws" {
+  alias  = "ecrpublic" # Karpenter 인증 전용
   region = "us-east-1"
 }
-
 ```
 
-### 3.2. 멀티 VPC 및 클러스터 배치
+### 3.3. 멀티 리전 클러스터 배치
 
-단일 환경 구성(`main.tf`) 내에서 3개의 VPC와 3개의 EKS 클러스터를 통합 관리한다.
+단일 환경 구성 내에서 2개의 EKS 클러스터를 통합 관리한다.
 
-```
-# 1. Admin VPC & Cluster (Seoul)
-module "vpc_admin_seoul" {
-  source    = "../../modules/network"
-  providers = { aws = aws.seoul }
-  name      = "lionpay-${var.env}-admin-vpc-seoul"
-}
-
-module "eks_admin_seoul" {
+```hcl
+# 1. Seoul Cluster (Seoul) - ArgoCD Hub & Service
+module "eks_seoul" {
   source       = "../../modules/eks"
-  providers    = { aws = aws.seoul }
-  cluster_name = "lionpay-${var.env}-admin-seoul"
-  vpc_id       = module.vpc_admin_seoul.vpc_id
-  subnet_ids   = module.vpc_admin_seoul.private_subnets
-  # Admin은 관리 도구용이므로 안정적인 On-Demand 노드 사용
-  node_instance_types = ["t4g.medium"]
-  node_capacity_type  = "ON_DEMAND"
+  cluster_name = "lionpay-dev-seoul"
+  vpc_id       = module.vpc_seoul.vpc_id
+  subnet_ids   = module.vpc_seoul.private_subnets
+  # ...
 }
 
-# 2. Service VPC & Cluster (Seoul)
-module "vpc_service_seoul" {
-  source    = "../../modules/network"
-  providers = { aws = aws.seoul }
-  name      = "lionpay-${var.env}-service-vpc-seoul"
-}
-
-module "eks_service_seoul" {
-  source       = "../../modules/eks"
-  providers    = { aws = aws.seoul }
-  cluster_name = "lionpay-${var.env}-service-seoul"
-  vpc_id       = module.vpc_service_seoul.vpc_id
-  subnet_ids   = module.vpc_service_seoul.private_subnets
-}
-
-# 3. Service VPC & Cluster (Tokyo)
-module "vpc_service_tokyo" {
-  source    = "../../modules/network"
-  providers = { aws = aws.tokyo }
-  name      = "lionpay-${var.env}-service-vpc-tokyo"
-}
-
+# 2. Tokyo Cluster (Tokyo) - Spoke Service
 module "eks_service_tokyo" {
   source       = "../../modules/eks"
   providers    = { aws = aws.tokyo }
-  cluster_name = "lionpay-${var.env}-service-tokyo"
-  vpc_id       = module.vpc_service_tokyo.vpc_id
-  subnet_ids   = module.vpc_service_tokyo.private_subnets
+  cluster_name = "lionpay-dev-tokyo"
+  vpc_id       = module.vpc_tokyo.vpc_id
+  subnet_ids   = module.vpc_tokyo.private_subnets
+  # ...
 }
-
 ```
 
 ## 4. 핵심 코드 구현 예시 (Core Implementation)
 
-### A. Gateway 모듈 (`modules/gateway/main.tf`)
+### A. Aurora DSQL 멀티 리전 클러스터 (dsql.tf)
 
-Route 53 지연 시간 레코드를 생성하여 CloudFront가 가장 가까운 리전의 ALB를 오리진으로 선택하게 한다.
+DSQL은 서울과 도쿄 리전에 클러스터를 배치하고 오사카 리전을 Witness로 사용하여 멀티 리전 페어링을 구성한다.
 
-```
-# 1. Route 53 Latency Records (Origin Endpoint)
-resource "aws_route53_record" "origin_latency_seoul" {
-  zone_id = var.hosted_zone_id
-  name    = "origin-api.${var.domain_name}"
-  type    = "CNAME"
-  ttl     = 60
-
-  latency_routing_policy { region = "ap-northeast-2" }
-  set_identifier = "seoul"
-  records        = [var.alb_seoul_dns]
+```hcl
+module "dsql_multi_region" {
+  source = "../../modules/dsql"
+  
+  # Seoul (Primary)
+  seoul_vpc_id = module.vpc_service_seoul.vpc_id
+  
+  # Tokyo (Secondary)
+  tokyo_vpc_id = module.vpc_service_tokyo.vpc_id
+  
+  # Multi-Region Pairing with Osaka Witness
+  enable_multi_region = true
+  witness_region      = "ap-northeast-3"
 }
-
-resource "aws_route53_record" "origin_latency_tokyo" {
-  zone_id = var.hosted_zone_id
-  name    = "origin-api.${var.domain_name}"
-  type    = "CNAME"
-  ttl     = 60
-
-  latency_routing_policy { region = "ap-northeast-1" }
-  set_identifier = "tokyo"
-  records        = [var.alb_tokyo_dns]
-}
-
-# 2. CloudFront Distribution
-resource "aws_cloudfront_distribution" "this" {
-  origin {
-    domain_name = "origin-api.${var.domain_name}"
-    origin_id   = "MultiRegion-Backend"
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "https-only"
-    }
-  }
-
-  # API Path Behavior (Cache Disabled)
-  ordered_cache_behavior {
-    path_pattern     = "/api/*"
-    target_origin_id = "MultiRegion-Backend"
-    # Host 헤더 전달을 통한 ALB 라우팅 보장
-    forwarded_values {
-      query_string = true
-      headers      = ["Host", "Authorization"]
-      cookies { forward = "all" }
-    }
-    min_ttl = 0; default_ttl = 0; max_ttl = 0
-  }
-}
-
 ```
 
 ## 5. VPC 피어링 및 라우팅 (VPC Peering)
 
-Admin VPC(Seoul)의 ArgoCD가 각 Service Cluster에 접근할 수 있도록 피어링을 구성한다.
+서울 클러스터(ArgoCD)가 도쿄 클러스터를 제어하기 위해 서울 VPC ↔ 도쿄 VPC 간 직접 피어링을 연결한다.
 
-- **Peering 1:** Admin VPC (Seoul) ↔ Service VPC (Seoul)
-- **Peering 2:** Admin VPC (Seoul) ↔ Service VPC (Tokyo) - _Inter-Region Peering_
+- **Peering**: VPC Seoul (Hub) ↔ VPC Tokyo (Spoke)
+- **Route Table**: 각 VPC의 Private Subnet 라우팅 테이블에 상대 리전 CIDR 경로 추가.
 
 ## 6. 클러스터 역할 및 지역 배치 전략
 
-| **구분**            | **지역 (Region)**     | **VPC 구분** | **주요 실행 요소**                 |
-| ------------------- | --------------------- | ------------ | ---------------------------------- |
-| **Gateway Layer**   | **Global**            | **N/A**      | **CloudFront, Route 53 (Latency)** |
-| **Admin Cluster**   | 서울 (ap-northeast-2) | Admin VPC    | **ArgoCD (GitOps Hub)**            |
-| **Service Cluster** | 서울 / 도쿄           | Service VPC  | Lionpay API (Auth, Wallet)         |
-
-- _참고: 모니터링은 Grafana Cloud(SaaS)를 사용하므로 Admin 클러스터는 별도의 Prometheus/Loki 서버를 호스팅하지 않고 ArgoCD 운영에 집중한다._
+| 구분 | 지역 (Region) | 역할 | 주요 실행 요소 |
+| :--- | :--- | :--- | :--- |
+| **Seoul Cluster** | 서울 (ap-northeast-2) | Hub (Admin + Service) | **ArgoCD (EKS Capability)**, Lionpay API, Monitoring Agent |
+| **Tokyo Cluster** | 도쿄 (ap-northeast-1) | Spoke (Service) | Lionpay API, Monitoring Agent |
 
 ## 7. 환경별 구성 전략 (Environment Strategy)
 
 `dev`와 `prod` 환경은 아키텍처 구조는 동일하나, 비용 효율성과 운영 안정성을 위해 리소스 스펙 및 설정 값을 차별화한다.
 
-| **카테고리**      | **설정 항목**              | **Dev (개발/QA)**                | **Prod (운영)**                  |
-| ----------------- | -------------------------- | -------------------------------- | -------------------------------- |
-|                   |                            |                                  |                                  |
-|                   | **NAT Gateway**            | 1 per VPC (비용 절감)            | 1 per AZ (고가용성)              |
-| **Compute (EKS)** | **Node Instance**          | `t4g.medium` (ARM)               | `m7g.large` (ARM)                |
-|                   | **Capacity Type**          | **SPOT** (비용 최적화)           | **ON_DEMAND** (안정성 보장)      |
-|                   | **Cluster Logging**        | 비활성화 또는 최소화             | 활성화 (Audit, Authenticator 등) |
-|                   | **Node Scaling**           | Min 1 / Max 3                    | Min 3 / Max 10 (AZ 분산)         |
-| **Database**      | **Billing Mode**           | On-Demand (Pay-per-request)      | Provisioned (Auto Scaling 적용)  |
-|                   | **Backup (PITR)**          | 비활성화                         | 활성화 (Point-in-Time Recovery)  |
-|                   | **Deletion Protection**    | 비활성화                         | 활성화 (실수 방지)               |
-| **Gateway**       | **CloudFront Price Class** | `PriceClass_100` (저렴한 리전만) | `PriceClass_All` (전 세계)       |
-|                   | **WAF Web ACL**            | Count 모드 (모니터링 위주)       | Block 모드 (실제 차단)           |
-| **Common**        | **TFC Workspace**          | `lionpay-dev`                    | `lionpay-prod`                   |
+| 카테고리 | 설정 항목 | Dev (개발/QA) | Prod (운영) |
+| :--- | :--- | :--- | :--- |
+| **Compute (EKS)** | Service Nodes | t4g.medium (ARM) | m7g.large (ARM) |
+| | Capacity Type | SPOT (비용 최적화) | ON_DEMAND (안정성 보장) |
+| **Gateway** | CloudFront Price | PriceClass_100 | PriceClass_All |
+| **Common** | TFC Workspace | lionpay-dev | lionpay-prod |
 
 ## 8. 배포 워크플로우 (Deployment Workflow)
 

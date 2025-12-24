@@ -1,59 +1,103 @@
-output "admin_seoul_cluster_name" {
-  value = module.eks_admin_seoul.cluster_name
+###############################################################
+# EKS Cluster Outputs
+###############################################################
+
+output "seoul_cluster_name" {
+  description = "Seoul (Hub) EKS cluster name"
+  value       = module.eks_seoul.cluster_name
 }
 
-output "service_seoul_cluster_name" {
-  value = module.eks_service_seoul.cluster_name
+output "tokyo_cluster_name" {
+  description = "Tokyo (Spoke) EKS cluster name"
+  value       = module.eks_tokyo.cluster_name
 }
 
-output "service_tokyo_cluster_name" {
-  value = module.eks_service_tokyo.cluster_name
+output "seoul_cluster_endpoint" {
+  description = "Seoul (Hub) EKS cluster endpoint"
+  value       = module.eks_seoul.cluster_endpoint
 }
 
-output "admin_seoul_kubeconfig" {
-  value = module.eks_admin_seoul.configure_kubectl
+output "tokyo_cluster_endpoint" {
+  description = "Tokyo (Spoke) EKS cluster endpoint"
+  value       = module.eks_tokyo.cluster_endpoint
 }
 
-output "service_seoul_kubeconfig" {
-  value = module.eks_service_seoul.configure_kubectl
+###############################################################
+# VPC Outputs
+###############################################################
+
+output "seoul_vpc_id" {
+  description = "Seoul VPC ID"
+  value       = module.vpc_seoul.vpc_id
 }
 
-output "service_tokyo_kubeconfig" {
-  value = module.eks_service_tokyo.configure_kubectl
+output "tokyo_vpc_id" {
+  description = "Tokyo VPC ID"
+  value       = module.vpc_tokyo.vpc_id
 }
+
+output "seoul_private_subnets" {
+  description = "Seoul VPC private subnet IDs"
+  value       = module.vpc_seoul.private_subnets
+}
+
+output "tokyo_private_subnets" {
+  description = "Tokyo VPC private subnet IDs"
+  value       = module.vpc_tokyo.private_subnets
+}
+
+###############################################################
+# DynamoDB Outputs
+###############################################################
 
 output "dynamodb_table_arn" {
-  value = module.dynamodb.table_arn
+  description = "DynamoDB global table ARN"
+  value       = module.dynamodb.table_arn
 }
 
-output "dsql_cluster_identifier" {
-  value = module.dsql.identifier
-}
-
-output "dsql_vpc_endpoint_service_name" {
-  value = module.dsql.vpc_endpoint_service_name
-}
+###############################################################
+# S3 Outputs
+###############################################################
 
 output "s3_bucket_name" {
-  value = module.s3.bucket_name
+  description = "S3 bucket name"
+  value       = module.s3.bucket_name
 }
 
-output "admin_seoul_vpc_id" {
-  value = module.vpc_admin_seoul.vpc_id
+###############################################################
+# DSQL Outputs
+###############################################################
+
+output "dsql_seoul_arn" {
+  description = "Aurora DSQL Seoul cluster ARN"
+  value       = module.dsql_seoul.arn
 }
 
-output "service_seoul_vpc_id" {
-  value = module.vpc_service_seoul.vpc_id
+output "dsql_tokyo_arn" {
+  description = "Aurora DSQL Tokyo cluster ARN"
+  value       = module.dsql_tokyo.arn
 }
 
-output "service_tokyo_vpc_id" {
-  value = module.vpc_service_tokyo.vpc_id
+output "dsql_iam_role_seoul_arn" {
+  description = "IAM role ARN for DSQL access from Seoul cluster"
+  value       = aws_iam_role.service_account_seoul.arn
 }
 
-output "service_seoul_private_subnets" {
-  value = module.vpc_service_seoul.private_subnets
+output "dsql_iam_role_tokyo_arn" {
+  description = "IAM role ARN for DSQL access from Tokyo cluster"
+  value       = aws_iam_role.service_account_tokyo.arn
 }
 
-output "service_tokyo_private_subnets" {
-  value = module.vpc_service_tokyo.private_subnets
+###############################################################
+# ArgoCD Outputs
+###############################################################
+
+output "argocd_namespace" {
+  description = "ArgoCD namespace in Seoul cluster"
+  value       = "argocd"
+}
+
+output "argocd_server_url" {
+  description = "ArgoCD server URL (available after capability is created)"
+  value       = try(aws_eks_capability.argocd_seoul.configuration[0].argo_cd[0].server_url, null)
 }

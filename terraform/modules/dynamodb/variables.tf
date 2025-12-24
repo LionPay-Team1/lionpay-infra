@@ -36,6 +36,15 @@ variable "deletion_protection" {
   default = false
 }
 
+variable "replica_regions" {
+  description = "List of regions to create replicas in"
+  type = list(object({
+    region_name = string
+    kms_key_arn = optional(string)
+  }))
+  default = []
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

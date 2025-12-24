@@ -1,0 +1,25 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: t4g
+spec:
+  amiSelectorTerms:
+    - alias: al2023@latest
+  instanceProfile: "${instance_profile_name}"
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${cluster_name}"
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${cluster_name}"
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 80Gi
+        volumeType: gp3
+        iops: 3000
+        throughput: 125
+        encrypted: true
+  tags:
+    Environment: "${environment}"
+    Name: "${cluster_name}-karpenter-node"

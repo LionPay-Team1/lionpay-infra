@@ -1,29 +1,35 @@
 variable "deletion_protection_enabled" {
-  type    = bool
-  default = false
+  description = "Whether deletion protection is enabled"
+  type        = bool
+  default     = false
 }
 
 variable "force_destroy" {
-  type    = bool
-  default = false
+  description = "Whether to force destroy the cluster"
+  type        = bool
+  default     = false
 }
 
 variable "kms_encryption_key" {
-  type    = string
-  default = null
+  description = "KMS key ARN for encryption"
+  type        = string
+  default     = null
 }
 
 variable "witness_region" {
-  type    = string
-  default = null
+  description = "Witness region for multi-region setup"
+  type        = string
+  default     = null
 }
 
-variable "region" {
-  type    = string
-  default = null
+variable "linked_cluster_arns" {
+  description = "Set of linked cluster ARNs for multi-region peering"
+  type        = set(string)
+  default     = []
 }
 
 variable "tags" {
-  type    = map(string)
-  default = {}
+  description = "Tags to apply to resources"
+  type        = map(string)
+  default     = {}
 }

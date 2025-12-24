@@ -10,7 +10,7 @@ variable "region_tokyo" {
 
 variable "repositories" {
   type    = list(string)
-  default = ["lionpay-auth-tf", "lionpay-wallet-tf"]
+  default = ["lionpay-auth", "lionpay-wallet"]
 }
 
 variable "image_tag_mutability" {

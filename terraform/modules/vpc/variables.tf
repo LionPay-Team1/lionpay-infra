@@ -28,9 +28,18 @@ variable "single_nat_gateway" {
   default = true
 }
 
-variable "karpenter_discovery_tag" {
-  type    = string
-  default = null
+
+
+variable "enable_dynamodb_endpoint" {
+  description = "Enable DynamoDB VPC Gateway Endpoint"
+  type        = bool
+  default     = false
+}
+
+variable "enable_s3_endpoint" {
+  description = "Enable S3 VPC Gateway Endpoint"
+  type        = bool
+  default     = false
 }
 
 variable "tags" {
