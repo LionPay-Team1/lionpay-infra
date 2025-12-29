@@ -13,9 +13,12 @@ module "karpenter" {
   cluster_name = var.cluster_name
 
   # Name needs to match role name passed to the EC2NodeClass
+  create_node_iam_role            = false
   node_iam_role_use_name_prefix   = false
   node_iam_role_name              = var.node_iam_role_name
+  node_iam_role_arn               = var.node_iam_role_arn
   create_pod_identity_association = true
+  create_access_entry             = false
 
   tags = var.tags
 }
@@ -47,8 +50,8 @@ resource "helm_release" "karpenter" {
       - key: karpenter.sh/controller
         operator: Exists
         effect: NoSchedule
-      webhook:
-        enabled: false
+    webhook:
+      enabled: false
     EOT
   ]
 }

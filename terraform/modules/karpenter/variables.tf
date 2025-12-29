@@ -18,6 +18,11 @@ variable "node_iam_role_name" {
   type        = string
 }
 
+variable "node_iam_role_arn" {
+  description = "The ARN of the IAM role for Karpenter nodes"
+  type        = string
+}
+
 variable "karpenter_version" {
   description = "Version of the Karpenter Helm chart"
   type        = string

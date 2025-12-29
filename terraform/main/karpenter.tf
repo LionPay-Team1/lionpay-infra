@@ -13,6 +13,7 @@ module "karpenter_seoul" {
   cluster_endpoint          = module.eks_seoul.cluster_endpoint
   cluster_oidc_provider_arn = module.eks_seoul.oidc_provider_arn
   node_iam_role_name        = module.eks_seoul.karpenter_node_iam_role_name
+  node_iam_role_arn         = module.eks_seoul.karpenter_node_iam_role_arn
 
 
 
@@ -30,6 +31,7 @@ module "karpenter_tokyo" {
   cluster_endpoint          = module.eks_tokyo.cluster_endpoint
   cluster_oidc_provider_arn = module.eks_tokyo.oidc_provider_arn
   node_iam_role_name        = module.eks_tokyo.karpenter_node_iam_role_name
+  node_iam_role_arn         = module.eks_tokyo.karpenter_node_iam_role_arn
 
 
 

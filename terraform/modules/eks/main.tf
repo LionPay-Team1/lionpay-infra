@@ -24,7 +24,7 @@ module "eks" {
   # Managed Node Group for system workloads (Karpenter controller, CoreDNS, etc.)
   eks_managed_node_groups = {
     karpenter = {
-      ami_type       = "BOTTLEROCKET_x86_64"
+      ami_type       = "BOTTLEROCKET_ARM_64"
       instance_types = var.mng_instance_types
 
       min_size     = var.mng_min_size
