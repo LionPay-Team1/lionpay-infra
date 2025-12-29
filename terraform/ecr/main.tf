@@ -6,7 +6,7 @@ locals {
 
 module "ecr_seoul" {
   for_each = toset(var.repositories)
-  source   = "../../modules/ecr"
+  source   = "../modules/ecr"
 
   name                 = each.value
   image_tag_mutability = var.image_tag_mutability
@@ -20,7 +20,7 @@ module "ecr_seoul" {
 
 module "ecr_tokyo" {
   for_each = toset(var.repositories)
-  source   = "../../modules/ecr"
+  source   = "../modules/ecr"
   providers = {
     aws = aws.tokyo
   }

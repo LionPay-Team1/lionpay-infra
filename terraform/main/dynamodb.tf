@@ -3,7 +3,7 @@
 ###############################################################
 
 module "dynamodb" {
-  source = "../../modules/dynamodb"
+  source = "../modules/dynamodb"
 
   table_name             = var.dynamodb_table_name
   billing_mode           = var.dynamodb_billing_mode
