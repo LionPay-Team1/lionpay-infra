@@ -6,8 +6,8 @@
 module "eks_seoul" {
   source = "../modules/eks"
   providers = {
-    aws     = aws
-    kubectl = kubectl.seoul
+    aws = aws
+
   }
 
   cluster_name    = local.seoul_cluster_name
@@ -16,8 +16,6 @@ module "eks_seoul" {
   subnet_ids      = module.vpc_seoul.private_subnets
   environment     = var.env
 
-  node_pool_cpu_limit = var.node_pool_cpu_limit
-
   tags = local.tags
 }
 
@@ -25,8 +23,8 @@ module "eks_seoul" {
 module "eks_tokyo" {
   source = "../modules/eks"
   providers = {
-    aws     = aws.tokyo
-    kubectl = kubectl.tokyo
+    aws = aws.tokyo
+
   }
 
   cluster_name    = local.tokyo_cluster_name
@@ -35,16 +33,12 @@ module "eks_tokyo" {
   subnet_ids      = module.vpc_tokyo.private_subnets
   environment     = var.env
 
-  node_pool_cpu_limit = var.node_pool_cpu_limit
-
   tags = local.tags
 }
 
 ###############################################################
 # IAM Role for ArgoCD Capability
 ###############################################################
-
-data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "argocd_capability" {
   name = "${local.name_prefix}-argocd-capability"
@@ -129,7 +123,7 @@ resource "aws_eks_capability" "argocd_seoul" {
       }
       aws_idc {
         idc_instance_arn = var.idc_instance_arn
-        idc_region       = coalesce(var.idc_region, var.region_seoul)
+        idc_region       = var.idc_region
       }
     }
   }
@@ -164,10 +158,13 @@ module "eks_blueprints_addons_seoul" {
   # Karpenter configuration
   enable_karpenter = true
   karpenter = {
-    chart_version = "1.1.1"
+    chart_version       = "1.6.2"
+    repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+    repository_password = data.aws_ecrpublic_authorization_token.token.password
   }
   karpenter_node = {
     iam_role_use_name_prefix = false
+    iam_role_name            = "${module.eks_seoul.cluster_name}-karpenter-node-role"
   }
 
   tags = local.tags
@@ -198,10 +195,13 @@ module "eks_blueprints_addons_tokyo" {
   # Karpenter configuration
   enable_karpenter = true
   karpenter = {
-    chart_version = "1.1.1"
+    chart_version       = "1.6.2"
+    repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+    repository_password = data.aws_ecrpublic_authorization_token.token.password
   }
   karpenter_node = {
     iam_role_use_name_prefix = false
+    iam_role_name            = "${module.eks_tokyo.cluster_name}-karpenter-node-role"
   }
 
   tags = local.tags

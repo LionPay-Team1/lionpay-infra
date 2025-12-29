@@ -11,8 +11,8 @@ locals {
 }
 
 # Apply default storage class
-resource "kubectl_manifest" "storageclass" {
+resource "kubernetes_manifest" "storageclass" {
   for_each = toset(local.storageclass_yamls)
 
-  yaml_body = file("${path.module}/config/${each.value}")
+  manifest = yamldecode(file("${path.module}/config/${each.value}"))
 }

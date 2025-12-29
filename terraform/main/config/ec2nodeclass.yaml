@@ -1,10 +1,10 @@
 apiVersion: karpenter.k8s.aws/v1
 kind: EC2NodeClass
 metadata:
-  name: t4g
+  name: ${name}
 spec:
   amiSelectorTerms:
-    - alias: al2023@latest
+    - alias: bottlerocket@latest
   instanceProfile: "${instance_profile_name}"
   subnetSelectorTerms:
     - tags:
@@ -15,7 +15,7 @@ spec:
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
-        volumeSize: 80Gi
+        volumeSize: 30Gi
         volumeType: gp3
         iops: 3000
         throughput: 125

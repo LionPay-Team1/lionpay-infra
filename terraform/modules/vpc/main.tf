@@ -1,6 +1,6 @@
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 6.0"
+  version = "6.5.1"
 
   name = var.name
   cidr = var.cidr
@@ -16,9 +16,14 @@ module "vpc" {
     "kubernetes.io/role/elb" = 1
   }
 
-  private_subnet_tags = {
-    "kubernetes.io/role/internal-elb" = 1
-  }
+  private_subnet_tags = merge(
+    {
+      "kubernetes.io/role/internal-elb" = 1
+    },
+    var.cluster_name != "" ? {
+      "karpenter.sh/discovery" = var.cluster_name
+    } : {}
+  )
 
   tags = var.tags
 }
@@ -27,7 +32,7 @@ resource "aws_vpc_endpoint" "dynamodb" {
   count = var.enable_dynamodb_endpoint ? 1 : 0
 
   vpc_id            = module.vpc.vpc_id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.dynamodb"
+  service_name      = "com.amazonaws.${data.aws_region.current.region}.dynamodb"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = module.vpc.private_route_table_ids
 
@@ -40,7 +45,7 @@ resource "aws_vpc_endpoint" "s3" {
   count = var.enable_s3_endpoint ? 1 : 0
 
   vpc_id            = module.vpc.vpc_id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
+  service_name      = "com.amazonaws.${data.aws_region.current.region}.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = module.vpc.private_route_table_ids
 

@@ -26,7 +26,7 @@ module "eks" {
     system = {
       name           = "system"
       instance_types = var.system_node_instance_types
-      ami_type       = "AL2023_ARM_64_STANDARD"
+      ami_type       = "BOTTLEROCKET_ARM_64"
 
       min_size     = var.system_node_min_size
       max_size     = var.system_node_max_size
@@ -42,6 +42,10 @@ module "eks" {
           value  = "true"
           effect = "NO_SCHEDULE"
         }
+      }
+
+      iam_role_additional_policies = {
+        AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
       }
     }
   }

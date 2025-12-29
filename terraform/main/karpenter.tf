@@ -4,70 +4,48 @@
 ###############################################################
 
 # Seoul Cluster - EC2NodeClass
-resource "kubectl_manifest" "ec2nodeclass_seoul" {
-  provider = kubectl.seoul
+resource "kubernetes_manifest" "ec2nodeclass_seoul" {
+  provider = kubernetes.seoul
 
-  yaml_body = templatefile("${path.module}/../modules/eks/config/ec2nodeclass-t4g.yaml", {
+  manifest = yamldecode(templatefile("${path.module}/config/ec2nodeclass.yaml", {
+    name                  = "default"
     instance_profile_name = module.eks_seoul.karpenter_instance_profile_name
     cluster_name          = module.eks_seoul.cluster_name
     environment           = var.env
-  })
+  }))
 
   depends_on = [module.eks_blueprints_addons_seoul]
 }
 
-resource "kubectl_manifest" "nodepool_spot_seoul" {
-  provider = kubectl.seoul
+resource "kubernetes_manifest" "nodepool_seoul" {
+  provider = kubernetes.seoul
 
-  yaml_body = templatefile("${path.module}/../modules/eks/config/nodepool-t4g-spot.yaml", {
-    node_pool_cpu_limit = var.node_pool_cpu_limit
-  })
+  manifest = yamldecode(file("${path.module}/config/${var.env}/nodepool.yaml"))
 
-  depends_on = [kubectl_manifest.ec2nodeclass_seoul]
-}
-
-resource "kubectl_manifest" "nodepool_ondemand_seoul" {
-  provider = kubectl.seoul
-
-  yaml_body = templatefile("${path.module}/../modules/eks/config/nodepool-t4g-ondemand.yaml", {
-    node_pool_cpu_limit = var.node_pool_cpu_limit
-  })
-
-  depends_on = [kubectl_manifest.ec2nodeclass_seoul]
+  depends_on = [kubernetes_manifest.ec2nodeclass_seoul]
 }
 
 ###############################################################
 # Tokyo Cluster - Karpenter Configuration
 ###############################################################
 
-resource "kubectl_manifest" "ec2nodeclass_tokyo" {
-  provider = kubectl.tokyo
+resource "kubernetes_manifest" "ec2nodeclass_tokyo" {
+  provider = kubernetes.tokyo
 
-  yaml_body = templatefile("${path.module}/../modules/eks/config/ec2nodeclass-t4g.yaml", {
+  manifest = yamldecode(templatefile("${path.module}/config/ec2nodeclass.yaml", {
+    name                  = "default"
     instance_profile_name = module.eks_tokyo.karpenter_instance_profile_name
     cluster_name          = module.eks_tokyo.cluster_name
     environment           = var.env
-  })
+  }))
 
   depends_on = [module.eks_blueprints_addons_tokyo]
 }
 
-resource "kubectl_manifest" "nodepool_spot_tokyo" {
-  provider = kubectl.tokyo
+resource "kubernetes_manifest" "nodepool_tokyo" {
+  provider = kubernetes.tokyo
 
-  yaml_body = templatefile("${path.module}/../modules/eks/config/nodepool-t4g-spot.yaml", {
-    node_pool_cpu_limit = var.node_pool_cpu_limit
-  })
+  manifest = yamldecode(file("${path.module}/config/${var.env}/nodepool.yaml"))
 
-  depends_on = [kubectl_manifest.ec2nodeclass_tokyo]
-}
-
-resource "kubectl_manifest" "nodepool_ondemand_tokyo" {
-  provider = kubectl.tokyo
-
-  yaml_body = templatefile("${path.module}/../modules/eks/config/nodepool-t4g-ondemand.yaml", {
-    node_pool_cpu_limit = var.node_pool_cpu_limit
-  })
-
-  depends_on = [kubectl_manifest.ec2nodeclass_tokyo]
+  depends_on = [kubernetes_manifest.ec2nodeclass_tokyo]
 }

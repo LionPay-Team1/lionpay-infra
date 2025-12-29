@@ -28,8 +28,6 @@ variable "single_nat_gateway" {
   default = true
 }
 
-
-
 variable "enable_dynamodb_endpoint" {
   description = "Enable DynamoDB VPC Gateway Endpoint"
   type        = bool
@@ -45,4 +43,10 @@ variable "enable_s3_endpoint" {
 variable "tags" {
   type    = map(string)
   default = {}
+}
+
+variable "cluster_name" {
+  description = "EKS cluster name for Karpenter discovery tags on subnets"
+  type        = string
+  default     = ""
 }
