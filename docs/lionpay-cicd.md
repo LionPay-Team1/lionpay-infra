@@ -88,13 +88,13 @@ provider "aws" {
 ```
 # 1. Admin VPC & Cluster (Seoul)
 module "vpc_admin_seoul" {
-  source    = "../../modules/network"
+  source    = "../modules/network"
   providers = { aws = aws.seoul }
   name      = "lionpay-${var.env}-admin-vpc-seoul"
 }
 
 module "eks_admin_seoul" {
-  source       = "../../modules/eks"
+  source       = "../modules/eks"
   providers    = { aws = aws.seoul }
   cluster_name = "lionpay-${var.env}-admin-seoul"
   vpc_id       = module.vpc_admin_seoul.vpc_id
@@ -106,13 +106,13 @@ module "eks_admin_seoul" {
 
 # 2. Service VPC & Cluster (Seoul)
 module "vpc_service_seoul" {
-  source    = "../../modules/network"
+  source    = "../modules/network"
   providers = { aws = aws.seoul }
   name      = "lionpay-${var.env}-service-vpc-seoul"
 }
 
 module "eks_service_seoul" {
-  source       = "../../modules/eks"
+  source       = "../modules/eks"
   providers    = { aws = aws.seoul }
   cluster_name = "lionpay-${var.env}-service-seoul"
   vpc_id       = module.vpc_service_seoul.vpc_id
@@ -121,13 +121,13 @@ module "eks_service_seoul" {
 
 # 3. Service VPC & Cluster (Tokyo)
 module "vpc_service_tokyo" {
-  source    = "../../modules/network"
+  source    = "../modules/network"
   providers = { aws = aws.tokyo }
   name      = "lionpay-${var.env}-service-vpc-tokyo"
 }
 
 module "eks_service_tokyo" {
-  source       = "../../modules/eks"
+  source       = "../modules/eks"
   providers    = { aws = aws.tokyo }
   cluster_name = "lionpay-${var.env}-service-tokyo"
   vpc_id       = module.vpc_service_tokyo.vpc_id
@@ -208,6 +208,7 @@ Admin VPC(Seoul)의 ArgoCD가 각 Service Cluster에 접근할 수 있도록 피
 | **Gateway Layer** | **Global** | **N/A** | **CloudFront, Route 53 (Latency)** |
 | **Admin Cluster** | 서울 (ap-northeast-2) | Admin VPC | **ArgoCD (GitOps Hub)** |
 | **Service Cluster** | 서울 / 도쿄 | Service VPC | Lionpay API (Auth, Wallet) |
+
 - *참고: 모니터링은 Grafana Cloud(SaaS)를 사용하므로 Admin 클러스터는 별도의 Prometheus/Loki 서버를 호스팅하지 않고 ArgoCD 운영에 집중한다.*
 
 ## 7. 환경별 구성 전략 (Environment Strategy)

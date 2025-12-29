@@ -4,7 +4,7 @@
 
 # Seoul Cluster
 module "dsql_seoul" {
-  source = "../../modules/dsql"
+  source = "../modules/dsql"
   providers = {
     aws = aws
   }
@@ -20,7 +20,7 @@ module "dsql_seoul" {
 
 # Tokyo Cluster
 module "dsql_tokyo" {
-  source = "../../modules/dsql"
+  source = "../modules/dsql"
   providers = {
     aws = aws.tokyo
   }

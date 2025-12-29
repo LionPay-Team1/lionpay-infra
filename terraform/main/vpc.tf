@@ -3,7 +3,7 @@
 ###############################################################
 
 module "vpc_seoul" {
-  source = "../../modules/vpc"
+  source = "../modules/vpc"
 
   name                 = "${local.name_prefix}-vpc-seoul"
   cidr                 = var.seoul_vpc_cidr
@@ -18,7 +18,7 @@ module "vpc_seoul" {
 }
 
 module "vpc_tokyo" {
-  source = "../../modules/vpc"
+  source = "../modules/vpc"
   providers = {
     aws = aws.tokyo
   }

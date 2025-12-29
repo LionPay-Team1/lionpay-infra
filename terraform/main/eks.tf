@@ -4,7 +4,7 @@
 
 # Seoul Cluster - ArgoCD Hub & Service
 module "eks_seoul" {
-  source = "../../modules/eks"
+  source = "../modules/eks"
   providers = {
     aws     = aws
     kubectl = kubectl.seoul
@@ -23,7 +23,7 @@ module "eks_seoul" {
 
 # Tokyo Cluster - Service Spoke
 module "eks_tokyo" {
-  source = "../../modules/eks"
+  source = "../modules/eks"
   providers = {
     aws     = aws.tokyo
     kubectl = kubectl.tokyo

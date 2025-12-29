@@ -89,7 +89,7 @@ provider "aws" {
 ```hcl
 # 1. Seoul Cluster (Seoul) - ArgoCD Hub & Service
 module "eks_seoul" {
-  source       = "../../modules/eks"
+  source       = "../modules/eks"
   cluster_name = "lionpay-dev-seoul"
   vpc_id       = module.vpc_seoul.vpc_id
   subnet_ids   = module.vpc_seoul.private_subnets
@@ -98,7 +98,7 @@ module "eks_seoul" {
 
 # 2. Tokyo Cluster (Tokyo) - Spoke Service
 module "eks_service_tokyo" {
-  source       = "../../modules/eks"
+  source       = "../modules/eks"
   providers    = { aws = aws.tokyo }
   cluster_name = "lionpay-dev-tokyo"
   vpc_id       = module.vpc_tokyo.vpc_id
@@ -115,7 +115,7 @@ DSQL은 서울과 도쿄 리전에 클러스터를 배치하고 오사카 리전
 
 ```hcl
 module "dsql_multi_region" {
-  source = "../../modules/dsql"
+  source = "../modules/dsql"
   
   # Seoul (Primary)
   seoul_vpc_id = module.vpc_service_seoul.vpc_id
