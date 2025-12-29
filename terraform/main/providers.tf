@@ -1,15 +1,17 @@
 provider "aws" {
-  region = var.region_seoul
+  region = var.central_region
+}
+
+
+
+provider "aws" {
+  alias  = "seoul"
+  region = "ap-northeast-2"
 }
 
 provider "aws" {
   alias  = "tokyo"
-  region = var.region_tokyo
-}
-
-provider "aws" {
-  alias  = "ecrpublic"
-  region = "us-east-1"
+  region = "ap-northeast-1"
 }
 
 ###############################################################
@@ -24,7 +26,7 @@ provider "kubernetes" {
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eks_seoul.cluster_name, "--region", var.region_seoul]
+    args        = ["eks", "get-token", "--cluster-name", module.eks_seoul.cluster_name, "--region", "ap-northeast-2"]
   }
 }
 
@@ -36,7 +38,7 @@ provider "kubernetes" {
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eks_tokyo.cluster_name, "--region", var.region_tokyo]
+    args        = ["eks", "get-token", "--cluster-name", module.eks_tokyo.cluster_name, "--region", "ap-northeast-1"]
   }
 }
 
@@ -45,10 +47,7 @@ provider "kubernetes" {
 ###############################################################
 
 provider "helm" {
-  alias                  = "seoul"
-  registry_config_path   = "${path.module}/.helm/registry.json"
-  repository_config_path = "${path.module}/.helm/repositories.yaml"
-  repository_cache       = "${path.module}/.helm/cache"
+  alias = "seoul"
   kubernetes {
     host                   = module.eks_seoul.cluster_endpoint
     cluster_ca_certificate = base64decode(module.eks_seoul.cluster_certificate_authority_data)
@@ -62,10 +61,7 @@ provider "helm" {
 }
 
 provider "helm" {
-  alias                  = "tokyo"
-  registry_config_path   = "${path.module}/.helm/registry.json"
-  repository_config_path = "${path.module}/.helm/repositories.yaml"
-  repository_cache       = "${path.module}/.helm/cache"
+  alias = "tokyo"
   kubernetes {
     host                   = module.eks_tokyo.cluster_endpoint
     cluster_ca_certificate = base64decode(module.eks_tokyo.cluster_certificate_authority_data)
@@ -73,39 +69,7 @@ provider "helm" {
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", module.eks_tokyo.cluster_name, "--region", var.region_tokyo]
+      args        = ["eks", "get-token", "--cluster-name", module.eks_tokyo.cluster_name, "--region", "ap-northeast-1"]
     }
-  }
-}
-
-###############################################################
-# Kubectl Providers
-###############################################################
-
-provider "kubectl" {
-  alias                  = "seoul"
-  apply_retry_count      = 5
-  host                   = module.eks_seoul.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks_seoul.cluster_certificate_authority_data)
-  load_config_file       = false
-
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eks_seoul.cluster_name, "--region", var.region_seoul]
-  }
-}
-
-provider "kubectl" {
-  alias                  = "tokyo"
-  apply_retry_count      = 5
-  host                   = module.eks_tokyo.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks_tokyo.cluster_certificate_authority_data)
-  load_config_file       = false
-
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eks_tokyo.cluster_name, "--region", var.region_tokyo]
   }
 }

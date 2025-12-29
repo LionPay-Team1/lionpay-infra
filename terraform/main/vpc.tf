@@ -10,8 +10,11 @@ module "vpc_seoul" {
   azs                  = var.seoul_azs
   private_subnet_cidrs = var.seoul_private_subnet_cidrs
   public_subnet_cidrs  = var.seoul_public_subnet_cidrs
-  enable_nat_gateway   = var.seoul_enable_nat_gateway
-  single_nat_gateway   = var.seoul_single_nat_gateway
+  enable_nat_gateway   = true
+  single_nat_gateway   = true
+
+  # Karpenter discovery tag for subnets
+  karpenter_discovery_tag = local.seoul_cluster_name
 
   enable_dynamodb_endpoint = true
   tags                     = local.tags
@@ -28,8 +31,11 @@ module "vpc_tokyo" {
   azs                  = var.tokyo_azs
   private_subnet_cidrs = var.tokyo_private_subnet_cidrs
   public_subnet_cidrs  = var.tokyo_public_subnet_cidrs
-  enable_nat_gateway   = var.tokyo_enable_nat_gateway
-  single_nat_gateway   = var.tokyo_single_nat_gateway
+  enable_nat_gateway   = true
+  single_nat_gateway   = true
+
+  # Karpenter discovery tag for subnets
+  karpenter_discovery_tag = local.tokyo_cluster_name
 
   enable_dynamodb_endpoint = true
   tags                     = local.tags

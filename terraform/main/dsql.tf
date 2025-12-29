@@ -10,7 +10,7 @@ module "dsql_seoul" {
   }
 
   deletion_protection_enabled = false
-  witness_region              = var.dsql_witness_region
+  witness_region              = "ap-northeast-3"
 
   tags = merge(local.tags, {
     Name   = "${local.name_prefix}-dsql-seoul"
@@ -26,7 +26,7 @@ module "dsql_tokyo" {
   }
 
   deletion_protection_enabled = false
-  witness_region              = var.dsql_witness_region
+  witness_region              = "ap-northeast-3"
 
   tags = merge(local.tags, {
     Name   = "${local.name_prefix}-dsql-tokyo"
@@ -39,7 +39,7 @@ module "dsql_tokyo" {
 # Peering Seoul to Tokyo
 # resource "null_resource" "peering_dsql_seoul_to_tokyo" {
 #   provisioner "local-exec" {
-#     command = "aws dsql update-cluster --region ap-northeast-2 --identifier ${module.dsql_seoul.identifier} --multi-region-properties '{\"witnessRegion\": \"${var.dsql_witness_region}\", \"clusters\": [\"${module.dsql_tokyo.arn}\"]}'"
+#     command = "aws dsql update-cluster --region ap-northeast-2 --identifier ${module.dsql_seoul.identifier} --multi-region-properties '{\"witnessRegion\": \"${"ap-northeast-3"}\", \"clusters\": [\"${module.dsql_tokyo.arn}\"]}'"
 #   }
 
 #   depends_on = [module.dsql_seoul, module.dsql_tokyo]
@@ -47,7 +47,7 @@ module "dsql_tokyo" {
 
 # resource "null_resource" "peering_dsql_tokyo_to_seoul" {
 #   provisioner "local-exec" {
-#     command = "aws dsql update-cluster --region ap-northeast-1 --identifier ${module.dsql_tokyo.identifier} --multi-region-properties '{\"witnessRegion\": \"${var.dsql_witness_region}\", \"clusters\": [\"${module.dsql_seoul.arn}\"]}'"
+#     command = "aws dsql update-cluster --region ap-northeast-1 --identifier ${module.dsql_tokyo.identifier} --multi-region-properties '{\"witnessRegion\": \"${"ap-northeast-3"}\", \"clusters\": [\"${module.dsql_seoul.arn}\"]}'"
 #   }
 
 #   depends_on = [module.dsql_seoul, module.dsql_tokyo]

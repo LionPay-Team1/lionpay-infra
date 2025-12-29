@@ -6,17 +6,24 @@
 module "eks_seoul" {
   source = "../modules/eks"
   providers = {
-    aws     = aws
-    kubectl = kubectl.seoul
+    aws  = aws.seoul
+    helm = helm.seoul
   }
 
   cluster_name    = local.seoul_cluster_name
   cluster_version = var.kubernetes_version
   vpc_id          = module.vpc_seoul.vpc_id
-  subnet_ids      = module.vpc_seoul.private_subnets
+  private_subnets = module.vpc_seoul.private_subnets
   environment     = var.env
 
-  node_pool_cpu_limit = var.node_pool_cpu_limit
+  # Managed Node Group settings
+  mng_instance_types = var.mng_instance_types
+  mng_min_size       = var.mng_min_size
+  mng_max_size       = var.mng_max_size
+  mng_desired_size   = var.mng_desired_size
+
+  # Karpenter Helm chart credentials
+
 
   tags = local.tags
 }
@@ -25,17 +32,24 @@ module "eks_seoul" {
 module "eks_tokyo" {
   source = "../modules/eks"
   providers = {
-    aws     = aws.tokyo
-    kubectl = kubectl.tokyo
+    aws  = aws.tokyo
+    helm = helm.tokyo
   }
 
   cluster_name    = local.tokyo_cluster_name
   cluster_version = var.kubernetes_version
   vpc_id          = module.vpc_tokyo.vpc_id
-  subnet_ids      = module.vpc_tokyo.private_subnets
+  private_subnets = module.vpc_tokyo.private_subnets
   environment     = var.env
 
-  node_pool_cpu_limit = var.node_pool_cpu_limit
+  # Managed Node Group settings
+  mng_instance_types = var.mng_instance_types
+  mng_min_size       = var.mng_min_size
+  mng_max_size       = var.mng_max_size
+  mng_desired_size   = var.mng_desired_size
+
+  # Karpenter Helm chart credentials
+
 
   tags = local.tags
 }
@@ -43,8 +57,6 @@ module "eks_tokyo" {
 ###############################################################
 # IAM Role for ArgoCD Capability
 ###############################################################
-
-data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "argocd_capability" {
   name = "${local.name_prefix}-argocd-capability"
@@ -129,80 +141,12 @@ resource "aws_eks_capability" "argocd_seoul" {
       }
       aws_idc {
         idc_instance_arn = var.idc_instance_arn
-        idc_region       = coalesce(var.idc_region, var.region_seoul)
+        idc_region       = var.idc_region
       }
     }
   }
 
   tags = local.tags
 
-  depends_on = [module.eks_seoul, module.eks_blueprints_addons_seoul]
-}
-
-###############################################################
-# EKS Blueprints Addons - Seoul (Hub)
-###############################################################
-
-module "eks_blueprints_addons_seoul" {
-  source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.23"
-  providers = {
-    aws        = aws
-    helm       = helm.seoul
-    kubernetes = kubernetes.seoul
-  }
-
-  cluster_name      = module.eks_seoul.cluster_name
-  cluster_endpoint  = module.eks_seoul.cluster_endpoint
-  cluster_version   = module.eks_seoul.cluster_version
-  oidc_provider_arn = module.eks_seoul.oidc_provider_arn
-
-  enable_metrics_server = true
-
-  # Note: EKS Addons (vpc-cni, coredns, kube-proxy) are managed by EKS module
-
-  # Karpenter configuration
-  enable_karpenter = true
-  karpenter = {
-    chart_version = "1.1.1"
-  }
-  karpenter_node = {
-    iam_role_use_name_prefix = false
-  }
-
-  tags = local.tags
-}
-
-###############################################################
-# EKS Blueprints Addons - Tokyo (Spoke)
-###############################################################
-
-module "eks_blueprints_addons_tokyo" {
-  source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "~> 1.23"
-  providers = {
-    aws        = aws.tokyo
-    helm       = helm.tokyo
-    kubernetes = kubernetes.tokyo
-  }
-
-  cluster_name      = module.eks_tokyo.cluster_name
-  cluster_endpoint  = module.eks_tokyo.cluster_endpoint
-  cluster_version   = module.eks_tokyo.cluster_version
-  oidc_provider_arn = module.eks_tokyo.oidc_provider_arn
-
-  enable_metrics_server = true
-
-  # Note: EKS Addons (vpc-cni, coredns, kube-proxy) are managed by EKS module
-
-  # Karpenter configuration
-  enable_karpenter = true
-  karpenter = {
-    chart_version = "1.1.1"
-  }
-  karpenter_node = {
-    iam_role_use_name_prefix = false
-  }
-
-  tags = local.tags
+  depends_on = [module.eks_seoul]
 }

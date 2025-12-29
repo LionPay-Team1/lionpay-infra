@@ -6,7 +6,7 @@ variable "cluster_name" {
 variable "cluster_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.31"
+  default     = "1.34"
 }
 
 variable "vpc_id" {
@@ -14,7 +14,7 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "subnet_ids" {
+variable "private_subnets" {
   description = "List of subnet IDs for the EKS cluster"
   type        = list(string)
 }
@@ -32,31 +32,31 @@ variable "environment" {
 }
 
 ###############################################################
-# System Managed Node Group Variables
+# Managed Node Group Variables (Karpenter Controller & Addons)
 ###############################################################
 
-variable "system_node_instance_types" {
-  description = "Instance types for system node group"
+variable "mng_instance_types" {
+  description = "Instance types for managed node group"
   type        = list(string)
-  default     = ["t4g.medium"]
+  default     = ["t4g.large"]
 }
 
-variable "system_node_min_size" {
-  description = "Minimum size of system node group"
+variable "mng_min_size" {
+  description = "Minimum size of managed node group"
   type        = number
-  default     = 2
+  default     = 1
 }
 
-variable "system_node_max_size" {
-  description = "Maximum size of system node group"
+variable "mng_max_size" {
+  description = "Maximum size of managed node group"
   type        = number
   default     = 4
 }
 
-variable "system_node_desired_size" {
-  description = "Desired size of system node group"
+variable "mng_desired_size" {
+  description = "Desired size of managed node group"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 ###############################################################
@@ -66,13 +66,13 @@ variable "system_node_desired_size" {
 variable "node_pool_cpu_limit" {
   description = "CPU limit for each Karpenter node pool"
   type        = number
-  default     = 1000
+  default     = 10
 }
 
 variable "ephemeral_storage_size" {
   description = "Size of ephemeral storage for Karpenter nodes"
   type        = string
-  default     = "80Gi"
+  default     = "30Gi"
 }
 
 variable "ephemeral_storage_iops" {
@@ -98,3 +98,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+
+
+
+
+
