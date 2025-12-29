@@ -1,51 +1,37 @@
 ###############################################################
-# Karpenter EC2NodeClass and NodePools
-# Applied after EKS Blueprints Addons install Karpenter CRDs
+# Karpenter - Seoul (Hub) & Tokyo (Spoke)
 ###############################################################
 
-# Seoul Cluster - EC2NodeClass
-resource "kubernetes_manifest" "ec2nodeclass_seoul" {
-  provider = kubernetes.seoul
+module "karpenter_seoul" {
+  source = "../modules/karpenter"
+  providers = {
+    aws  = aws.seoul
+    helm = helm.seoul
+  }
 
-  manifest = yamldecode(templatefile("${path.module}/config/ec2nodeclass.yaml", {
-    name                  = "default"
-    instance_profile_name = module.eks_seoul.karpenter_instance_profile_name
-    cluster_name          = module.eks_seoul.cluster_name
-    environment           = var.env
-  }))
+  cluster_name              = module.eks_seoul.cluster_name
+  cluster_endpoint          = module.eks_seoul.cluster_endpoint
+  cluster_oidc_provider_arn = module.eks_seoul.oidc_provider_arn
+  node_iam_role_name        = module.eks_seoul.karpenter_node_iam_role_name
 
-  depends_on = [module.eks_blueprints_addons_seoul]
+
+
+  tags = local.tags
 }
 
-resource "kubernetes_manifest" "nodepool_seoul" {
-  provider = kubernetes.seoul
+module "karpenter_tokyo" {
+  source = "../modules/karpenter"
+  providers = {
+    aws  = aws.tokyo
+    helm = helm.tokyo
+  }
 
-  manifest = yamldecode(file("${path.module}/config/${var.env}/nodepool.yaml"))
+  cluster_name              = module.eks_tokyo.cluster_name
+  cluster_endpoint          = module.eks_tokyo.cluster_endpoint
+  cluster_oidc_provider_arn = module.eks_tokyo.oidc_provider_arn
+  node_iam_role_name        = module.eks_tokyo.karpenter_node_iam_role_name
 
-  depends_on = [kubernetes_manifest.ec2nodeclass_seoul]
-}
 
-###############################################################
-# Tokyo Cluster - Karpenter Configuration
-###############################################################
 
-resource "kubernetes_manifest" "ec2nodeclass_tokyo" {
-  provider = kubernetes.tokyo
-
-  manifest = yamldecode(templatefile("${path.module}/config/ec2nodeclass.yaml", {
-    name                  = "default"
-    instance_profile_name = module.eks_tokyo.karpenter_instance_profile_name
-    cluster_name          = module.eks_tokyo.cluster_name
-    environment           = var.env
-  }))
-
-  depends_on = [module.eks_blueprints_addons_tokyo]
-}
-
-resource "kubernetes_manifest" "nodepool_tokyo" {
-  provider = kubernetes.tokyo
-
-  manifest = yamldecode(file("${path.module}/config/${var.env}/nodepool.yaml"))
-
-  depends_on = [kubernetes_manifest.ec2nodeclass_tokyo]
+  tags = local.tags
 }

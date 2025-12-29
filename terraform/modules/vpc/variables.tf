@@ -45,7 +45,7 @@ variable "tags" {
   default = {}
 }
 
-variable "cluster_name" {
+variable "karpenter_discovery_tag" {
   description = "EKS cluster name for Karpenter discovery tags on subnets"
   type        = string
   default     = ""

@@ -2,10 +2,7 @@ provider "aws" {
   region = var.central_region
 }
 
-provider "aws" {
-  alias  = "ecrpublic"
-  region = "us-east-1"
-}
+
 
 provider "aws" {
   alias  = "seoul"
@@ -50,10 +47,7 @@ provider "kubernetes" {
 ###############################################################
 
 provider "helm" {
-  alias                  = "seoul"
-  registry_config_path   = "${path.module}/.helm/registry.json"
-  repository_config_path = "${path.module}/.helm/repositories.yaml"
-  repository_cache       = "${path.module}/.helm/cache"
+  alias = "seoul"
   kubernetes {
     host                   = module.eks_seoul.cluster_endpoint
     cluster_ca_certificate = base64decode(module.eks_seoul.cluster_certificate_authority_data)
@@ -67,10 +61,7 @@ provider "helm" {
 }
 
 provider "helm" {
-  alias                  = "tokyo"
-  registry_config_path   = "${path.module}/.helm/registry.json"
-  repository_config_path = "${path.module}/.helm/repositories.yaml"
-  repository_cache       = "${path.module}/.helm/cache"
+  alias = "tokyo"
   kubernetes {
     host                   = module.eks_tokyo.cluster_endpoint
     cluster_ca_certificate = base64decode(module.eks_tokyo.cluster_certificate_authority_data)
@@ -82,5 +73,3 @@ provider "helm" {
     }
   }
 }
-
-

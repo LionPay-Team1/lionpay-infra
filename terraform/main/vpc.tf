@@ -14,7 +14,7 @@ module "vpc_seoul" {
   single_nat_gateway   = true
 
   # Karpenter discovery tag for subnets
-  cluster_name = local.seoul_cluster_name
+  karpenter_discovery_tag = local.seoul_cluster_name
 
   enable_dynamodb_endpoint = true
   tags                     = local.tags
@@ -35,7 +35,7 @@ module "vpc_tokyo" {
   single_nat_gateway   = true
 
   # Karpenter discovery tag for subnets
-  cluster_name = local.tokyo_cluster_name
+  karpenter_discovery_tag = local.tokyo_cluster_name
 
   enable_dynamodb_endpoint = true
   tags                     = local.tags

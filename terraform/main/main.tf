@@ -48,7 +48,4 @@ data "aws_eks_cluster_auth" "tokyo" {
   depends_on = [module.eks_tokyo]
 }
 
-# ECR Public authorization token for Karpenter helm chart
-data "aws_ecrpublic_authorization_token" "token" {
-  provider = aws.ecrpublic
-}
+

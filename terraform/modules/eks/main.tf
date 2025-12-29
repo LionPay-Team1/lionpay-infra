@@ -12,7 +12,7 @@ module "eks" {
   endpoint_public_access = var.cluster_endpoint_public_access
 
   vpc_id     = var.vpc_id
-  subnet_ids = var.subnet_ids
+  subnet_ids = var.private_subnets
 
   enable_cluster_creator_admin_permissions = true
 
@@ -23,29 +23,27 @@ module "eks" {
 
   # Managed Node Group for system workloads (Karpenter controller, CoreDNS, etc.)
   eks_managed_node_groups = {
-    system = {
-      name           = "system"
-      instance_types = var.system_node_instance_types
-      ami_type       = "BOTTLEROCKET_ARM_64"
+    karpenter = {
+      ami_type       = "BOTTLEROCKET_x86_64"
+      instance_types = var.mng_instance_types
 
-      min_size     = var.system_node_min_size
-      max_size     = var.system_node_max_size
-      desired_size = var.system_node_desired_size
+      min_size     = var.mng_min_size
+      max_size     = var.mng_max_size
+      desired_size = var.mng_desired_size
 
       labels = {
-        "node-type" = "system"
+        # Used to ensure Karpenter runs on nodes that it does not manage
+        "karpenter.sh/controller" = "true"
       }
 
       taints = {
-        critical_addons_only = {
-          key    = "CriticalAddonsOnly"
+        # The pods that do not tolerate this taint should run on nodes
+        # created by Karpenter
+        karpenter = {
+          key    = "karpenter.sh/controller"
           value  = "true"
           effect = "NO_SCHEDULE"
         }
-      }
-
-      iam_role_additional_policies = {
-        AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
       }
     }
   }
@@ -58,14 +56,29 @@ module "eks" {
     }
   }
 
-  # Node security group tags for Karpenter discovery
-  node_security_group_tags = {
+  node_security_group_tags = merge(var.tags, {
+    # NOTE - if creating multiple security groups with this module, only tag the
+    # security group that Karpenter should utilize with the following tag
+    # (i.e. - at most, only one security group should have this tag in your account)
     "karpenter.sh/discovery" = var.cluster_name
-  }
+  })
 
   # EKS Addons
   addons = {
-    coredns    = {}
+    eks-pod-identity-agent = {}
+    coredns = {
+      configuration_values = jsonencode({
+        tolerations = [
+          # Allow CoreDNS to run on the same nodes as the Karpenter controller
+          # for use during cluster creation when Karpenter nodes do not yet exist
+          {
+            key    = "karpenter.sh/controller"
+            value  = "true"
+            effect = "NoSchedule"
+          }
+        ]
+      })
+    }
     kube-proxy = {}
     vpc-cni = {
       # Specify the VPC CNI addon should be deployed before compute to ensure
@@ -134,3 +147,6 @@ resource "aws_iam_instance_profile" "karpenter" {
   name = "${var.cluster_name}-karpenter-node-profile"
   role = aws_iam_role.karpenter_node_role.name
 }
+
+
+

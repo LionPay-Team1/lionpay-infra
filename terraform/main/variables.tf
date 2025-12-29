@@ -86,11 +86,32 @@ variable "tokyo_public_subnet_cidrs" {
 }
 
 ###############################################################
-# Karpenter Variables (Performance & Scaling)
+# Managed Node Group Variables (Karpenter Controller & Addons)
 ###############################################################
 
+variable "mng_instance_types" {
+  description = "Instance types for managed node group"
+  type        = list(string)
+  default     = ["t4g.large"]
+}
 
+variable "mng_min_size" {
+  description = "Minimum size of managed node group"
+  type        = number
+  default     = 1
+}
 
+variable "mng_max_size" {
+  description = "Maximum size of managed node group"
+  type        = number
+  default     = 4
+}
+
+variable "mng_desired_size" {
+  description = "Desired size of managed node group"
+  type        = number
+  default     = 2
+}
 
 
 ###############################################################
