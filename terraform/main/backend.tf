@@ -4,6 +4,6 @@ terraform {
     key            = "main/terraform.tfstate"
     region         = "ap-northeast-2"
     encrypt        = true
-    dynamodb_table = "terraform-locks"
+    dynamodb_table = "lionpay-terraform-locks"
   }
 }

@@ -7,6 +7,9 @@ param (
 Set-Location "$PSScriptRoot\main"
 [Console]::ResetColor()
 
+Write-Host "Terraform 초기화 중..." -ForegroundColor Cyan
+terraform init
+
 Write-Host "Terraform 워크스페이스 확인 중 ($Env)..." -ForegroundColor Cyan
 terraform workspace select $Env
 if ($LASTEXITCODE -ne 0) {
