@@ -1,7 +1,10 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateSet("dev", "prod")]
-    [string]$Env
+    [string]$Env,
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$Auto
 )
 
 Push-Location "$PSScriptRoot\main"
@@ -24,7 +27,11 @@ try {
     }
 
     Write-Host "Terraform apply 실행 중 ($Env)..." -ForegroundColor Green
-    terraform apply -var-file="${Env}.tfvars"
+    if ($Auto) {
+        terraform apply -var-file="${Env}.tfvars" -auto-approve
+    } else {
+        terraform apply -var-file="${Env}.tfvars"
+    }
 }
 finally {
     Pop-Location

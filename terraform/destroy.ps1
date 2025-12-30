@@ -1,7 +1,10 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateSet("dev", "prod")]
-    [string]$Env
+    [string]$Env,
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$Auto
 )
 
 Push-Location "$PSScriptRoot\main"
@@ -24,7 +27,11 @@ try {
     }
 
     Write-Host "Terraform destroy 실행 중 ($Env)..." -ForegroundColor Red
-    terraform destroy -var-file="${Env}.tfvars"
+    if ($Auto) {
+        terraform destroy -var-file="${Env}.tfvars" -auto-approve
+    } else {
+        terraform destroy -var-file="${Env}.tfvars"
+    }
 }
 finally {
     Pop-Location
