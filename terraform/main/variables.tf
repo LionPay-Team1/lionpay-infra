@@ -139,12 +139,3 @@ variable "s3_bucket_name" {
   type = string
 }
 
-###############################################################
-# ECR Variables
-###############################################################
-
-variable "repositories" {
-  type    = list(string)
-  default = ["lionpay-auth", "lionpay-wallet"]
-}
-

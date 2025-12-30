@@ -32,3 +32,14 @@ resource "aws_ecr_replication_configuration" "replication" {
     }
   }
 }
+
+###############################################################
+# Local Variables
+###############################################################
+
+locals {
+  tags = merge(var.tags, {
+    Project   = var.project_name
+    ManagedBy = "terraform"
+  })
+}
