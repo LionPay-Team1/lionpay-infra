@@ -21,16 +21,16 @@ try {
         return
     }
 
-    if (-not (Test-Path "${Env}.tfvars")) {
-        Write-Host "오류: '${Env}.tfvars' 파일이 존재하지 않습니다." -ForegroundColor Red
+    if (-not (Test-Path "config/${Env}.tfvars")) {
+        Write-Host "오류: 'config/${Env}.tfvars' 파일이 존재하지 않습니다." -ForegroundColor Red
         return
     }
 
     Write-Host "Terraform destroy 실행 중 ($Env)..." -ForegroundColor Red
     if ($Auto) {
-        terraform destroy -var-file="${Env}.tfvars" -auto-approve
+        terraform destroy -var-file="config/${Env}.tfvars" -auto-approve
     } else {
-        terraform destroy -var-file="${Env}.tfvars"
+        terraform destroy -var-file="config/${Env}.tfvars"
     }
 }
 finally {
