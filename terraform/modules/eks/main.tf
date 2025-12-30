@@ -35,6 +35,10 @@ module "eks" {
       max_size     = var.mng_max_size
       desired_size = var.mng_desired_size
 
+      tags = {
+        Name = "${var.cluster_name}-karpenter"
+      }
+
       labels = {
         # Used to ensure Karpenter runs on nodes that it does not manage
         "karpenter.sh/controller" = "true"
