@@ -9,6 +9,10 @@ module "eks" {
   name               = var.cluster_name
   kubernetes_version = var.cluster_version
 
+  upgrade_policy = {
+    support_type = "STANDARD"
+  }
+
   endpoint_public_access = var.cluster_endpoint_public_access
 
   vpc_id     = var.vpc_id
