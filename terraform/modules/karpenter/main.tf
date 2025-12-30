@@ -20,6 +20,9 @@ module "karpenter" {
   create_pod_identity_association = true
   create_access_entry             = false
 
+  # Pod Identity Association namespace must match Helm release namespace
+  namespace = local.namespace
+
   tags = var.tags
 }
 
@@ -44,6 +47,8 @@ resource "helm_release" "karpenter" {
       clusterName: ${var.cluster_name}
       clusterEndpoint: ${var.cluster_endpoint}
       interruptionQueue: ${module.karpenter.queue_name}
+    serviceAccount:
+      name: ${module.karpenter.service_account}
     tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
