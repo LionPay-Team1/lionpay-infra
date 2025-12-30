@@ -40,9 +40,15 @@ cd terraform
 `apply.ps1`을 실행하면 `terraform init`, `workspace` 선택, `terraform apply` 과정이 자동으로 진행됩니다.
 
 ```powershell
+# 기본 (확인 필요)
 ./apply.ps1 -Env <env_name>
+
+# 자동 승인 (확인 생략)
+./apply.ps1 -Env <env_name> -Auto
+
 # 예시:
 ./apply.ps1 -Env dev
+./apply.ps1 -Env dev -Auto
 ```
 
 ### 삭제 (Destroy)
@@ -50,19 +56,28 @@ cd terraform
 `destroy.ps1`을 실행하면 해당 환경의 리소스를 삭제합니다.
 
 ```powershell
+# 기본 (확인 필요)
 ./destroy.ps1 -Env <env_name>
+
+# 자동 승인 (확인 생략)
+./destroy.ps1 -Env <env_name> -Auto
+
 # 예시:
 ./destroy.ps1 -Env dev
+./destroy.ps1 -Env dev -Auto
 ```
 
 ## 4. Karpenter NodePool 적용
 
-Terraform 배포가 완료된 후, Karpenter가 실제로 노드를 생성할 수 있도록 `NodePool` 및 `EC2NodeClass` 리소스를 수동으로 적용해야 합니다.
+Terraform 배포 시 Karpenter `NodePool` 및 `EC2NodeClass` 설정이 **자동으로 적용**됩니다.
 
-```bash
-# terraform 디렉토리 기준
-kubectl apply -f main/config/dev-karpenter.yaml
+### 수동으로 업데이트가 필요한 경우
 
-# 또는 루트 디렉토리 기준
-kubectl apply -f terraform/main/config/dev-karpenter.yaml
+Karpenter 설정(`dev-karpenter.yaml` 또는 `prod-karpenter.yaml`)을 수정한 후:
+
+```powershell
+# Terraform을 통해 자동으로 적용 (권장)
+./apply.ps1 -Env dev -Auto
 ```
+
+**주의:** `main/config/dev-karpenter.yaml`을 직접 `kubectl apply`하면 템플릿 변수(`${cluster_name}` 등)가 치환되지 않아 오류가 발생합니다. 반드시 Terraform을 통해 생성된 `.terraform/karpenter_*.yaml` 파일을 사용하거나, `apply.ps1`을 다시 실행하세요.
