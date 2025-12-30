@@ -14,18 +14,17 @@ terraform init
 terraform apply
 ```
 
-### 2. 인프라 초기화
+### 2. ECR 배포 (환경 공통)
 
-부트스트래핑 완료 후, 메인 인프라 프로젝트를 초기화할 수 있습니다.
+ECR 리포지토리는 dev/prod 환경에서 공유됩니다. 다른 인프라보다 먼저 한 번만 배포하면 됩니다.
 
-**메인 인프라 (Main Infrastructure):**
-
-```bash
-cd terraform/main
+```powershell
+cd terraform/ecr
 terraform init
+terraform apply
 ```
 
-## 3. 배포 및 삭제 자동화 스크립트
+### 3. 메인 인프라 배포 및 삭제 자동화 스크립트
 
 `terraform` 디렉토리 내에 있는 `apply.ps1`, `destroy.ps1` 스크립트를 사용하여 환경별(`dev`, `prod`) 배포 및 삭제를 간편하게 수행할 수 있습니다.
 

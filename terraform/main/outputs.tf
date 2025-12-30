@@ -102,11 +102,3 @@ output "argocd_server_url" {
   value       = try(aws_eks_capability.argocd_seoul.configuration[0].argo_cd[0].server_url, null)
 }
 
-###############################################################
-# ECR Outputs
-###############################################################
-
-output "ecr_seoul_urls" {
-  description = "ECR repository URLs in Seoul"
-  value       = { for name, mod in module.ecr_central : name => mod.repository_url }
-}
