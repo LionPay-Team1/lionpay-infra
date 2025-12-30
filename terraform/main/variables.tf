@@ -20,7 +20,7 @@ variable "tags" {
 variable "kubernetes_version" {
   description = "Kubernetes version for EKS clusters"
   type        = string
-  default     = "1.31"
+  default     = "1.34"
 }
 
 ###############################################################
