@@ -21,16 +21,16 @@ try {
         terraform workspace new $Env
     }
 
-    if (-not (Test-Path "${Env}.tfvars")) {
-        Write-Host "오류: '${Env}.tfvars' 파일이 존재하지 않습니다." -ForegroundColor Red
+    if (-not (Test-Path "config/${Env}.tfvars")) {
+        Write-Host "오류: 'config/${Env}.tfvars' 파일이 존재하지 않습니다." -ForegroundColor Red
         return
     }
 
     Write-Host "Terraform apply 실행 중 ($Env)..." -ForegroundColor Green
     if ($Auto) {
-        terraform apply -var-file="${Env}.tfvars" -auto-approve
+        terraform apply -var-file="config/${Env}.tfvars" -auto-approve
     } else {
-        terraform apply -var-file="${Env}.tfvars"
+        terraform apply -var-file="config/${Env}.tfvars"
     }
 }
 finally {
