@@ -22,7 +22,7 @@ idc_instance_arn      = "arn:aws:sso:::instance/ssoins-72303d25a51b8abe"
 argocd_admin_group_id = "74689dac-9021-7043-6b98-b2ecbf19344c"
 
 # Managed Node Group (Karpenter Controller & Addons)
-mng_instance_types = ["t4g.small"]
+mng_instance_types = ["t4g.medium"]
 mng_min_size       = 2
-mng_max_size       = 4
+mng_max_size       = 10
 mng_desired_size   = 2
