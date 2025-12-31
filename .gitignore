@@ -11,10 +11,10 @@ crash.*.log
 .terraform.lock.hcl
 
 # dev env
-!dev.tfvars
+
 
 # prod env
-!prod.tfvars
+
 
 # Helm
 .helm/
