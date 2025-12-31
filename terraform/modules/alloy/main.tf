@@ -1,48 +1,33 @@
-resource "kubernetes_namespace_v1" "alloy" {
+resource "kubernetes_namespace_v1" "monitoring" {
   metadata {
-    name = "alloy"
+    name = "monitoring"
   }
 }
 
 resource "helm_release" "alloy" {
-  name             = "alloy"
-  chart            = "alloy"
+  name             = "grafana-cloud"
+  chart            = "grafana-cloud-onboarding"
   repository       = "https://grafana.github.io/helm-charts"
-  namespace        = kubernetes_namespace_v1.alloy.metadata[0].name
+  namespace        = kubernetes_namespace_v1.monitoring.metadata[0].name
   create_namespace = false
-  values           = [templatefile("${path.module}/values-alloy.tftpl", { cluster_name = var.cluster_name })]
 
-  depends_on = [
-    kubernetes_secret_v1.grafana_cloud_auth
-  ]
-
-  ### metrics
   set_sensitive {
-    name  = "destinations[0].auth.username"
-    value = var.metrics_username
-  }
-  set_sensitive {
-    name  = "destinations[0].auth.password"
-    value = var.metrics_password
+    name  = "cluster.name"
+    value = var.cluster_name
   }
 
-  ### logs
   set_sensitive {
-    name  = "destinations[1].auth.username"
-    value = var.logs_username
-  }
-  set_sensitive {
-    name  = "destinations[1].auth.password"
-    value = var.logs_password
+    name  = "grafanaCloud.fleetManagement.url"
+    value = var.fleet_url
   }
 
-  ### traces
   set_sensitive {
-    name  = "destinations[2].auth.username"
-    value = var.traces_username
+    name  = "grafanaCloud.fleetManagement.auth.username"
+    value = var.fleet_username
   }
+
   set_sensitive {
-    name  = "destinations[2].auth.password"
-    value = var.traces_password
+    name  = "grafanaCloud.fleetManagement.auth.password"
+    value = var.fleet_password
   }
 }

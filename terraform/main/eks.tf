@@ -286,13 +286,10 @@ module "alloy_seoul" {
     kubernetes = kubernetes.seoul
   }
 
-  cluster_name     = local.seoul_cluster_name
-  metrics_username = var.metrics_username
-  metrics_password = var.metrics_password
-  logs_username    = var.logs_username
-  logs_password    = var.logs_password
-  traces_username  = var.traces_username
-  traces_password  = var.traces_password
+  cluster_name   = local.seoul_cluster_name
+  fleet_url      = var.fleet_url
+  fleet_username = var.fleet_username
+  fleet_password = var.fleet_password
 }
 
 module "alloy_tokyo" {
@@ -303,11 +300,8 @@ module "alloy_tokyo" {
     kubernetes = kubernetes.tokyo
   }
 
-  cluster_name     = local.tokyo_cluster_name
-  metrics_username = var.metrics_username
-  metrics_password = var.metrics_password
-  logs_username    = var.logs_username
-  logs_password    = var.logs_password
-  traces_username  = var.traces_username
-  traces_password  = var.traces_password
+  cluster_name   = local.tokyo_cluster_name
+  fleet_url      = var.fleet_url
+  fleet_username = var.fleet_username
+  fleet_password = var.fleet_password
 }

@@ -139,35 +139,15 @@ variable "s3_bucket_name" {
   type = string
 }
 
-###############################################################
-# Monitoring Variables
-###############################################################
-variable "metrics_username" {
-  type      = string
-  sensitive = true
+variable "fleet_url" {
+  type = string
 }
 
-variable "metrics_password" {
-  type      = string
-  sensitive = true
+variable "fleet_username" {
+  type = string
 }
 
-variable "logs_username" {
-  type      = string
-  sensitive = true
-}
-
-variable "logs_password" {
-  type      = string
-  sensitive = true
-}
-
-variable "traces_username" {
-  type      = string
-  sensitive = true
-}
-
-variable "traces_password" {
+variable "fleet_password" {
   type      = string
   sensitive = true
 }
