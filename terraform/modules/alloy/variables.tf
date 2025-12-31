@@ -1,3 +1,8 @@
+variable "cluster_name" {
+  description = "Name of the EKS cluster"
+  type        = string
+}
+
 variable "metrics_username" {
   type      = string
   sensitive = true

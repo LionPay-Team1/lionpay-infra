@@ -29,5 +29,6 @@ kubeconfig.*
 # Examples
 .example/
 
-# monitoring env
+# Environments
+.env
 .env.secret

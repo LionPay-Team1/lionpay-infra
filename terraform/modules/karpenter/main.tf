@@ -40,24 +40,12 @@ resource "helm_release" "karpenter" {
   wait             = false
 
   values = [
-    <<-EOT
-    nodeSelector:
-      karpenter.sh/controller: 'true'
-    settings:
-      clusterName: ${var.cluster_name}
-      clusterEndpoint: ${var.cluster_endpoint}
-      interruptionQueue: ${module.karpenter.queue_name}
-    serviceAccount:
-      name: ${module.karpenter.service_account}
-    tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: karpenter.sh/controller
-        operator: Exists
-        effect: NoSchedule
-    webhook:
-      enabled: false
-    EOT
+    templatefile("${path.module}/values-karpenter.tftpl", {
+      cluster_name     = var.cluster_name
+      cluster_endpoint = var.cluster_endpoint
+      queue_name       = module.karpenter.queue_name
+      service_account  = module.karpenter.service_account
+    })
   ]
 }
 
@@ -74,14 +62,5 @@ resource "helm_release" "metrics_server" {
   wait       = true
   atomic     = true
 
-  values = [
-    <<-EOT
-    tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: karpenter.sh/controller
-        operator: Exists
-        effect: NoSchedule
-    EOT
-  ]
+  values = [file("${path.module}/values-metrics-server.tftpl")]
 }
