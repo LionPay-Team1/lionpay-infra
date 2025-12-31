@@ -9,9 +9,9 @@ module "ecr_central" {
   source   = "../modules/ecr"
 
   name                 = each.value
-  image_tag_mutability = "IMMUTABLE"
+  image_tag_mutability = "MUTABLE"
   scan_on_push         = true
-  force_delete         = false
+  force_delete         = true
   encryption_type      = "AES256"
   kms_key_arn          = null
   lifecycle_policy     = null
