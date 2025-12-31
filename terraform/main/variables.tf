@@ -139,3 +139,15 @@ variable "s3_bucket_name" {
   type = string
 }
 
+variable "fleet_url" {
+  type = string
+}
+
+variable "fleet_username" {
+  type = string
+}
+
+variable "fleet_password" {
+  type      = string
+  sensitive = true
+}

@@ -19,7 +19,7 @@ terraform {
 }
 
 ###############################################################
-# Locals and Data Sources
+# Locals
 ###############################################################
 
 locals {
@@ -34,18 +34,3 @@ locals {
     Environment = var.env
   })
 }
-
-# EKS Cluster Auth for Seoul (Hub)
-data "aws_eks_cluster_auth" "seoul" {
-  name       = module.eks_seoul.cluster_name
-  depends_on = [module.eks_seoul]
-}
-
-# EKS Cluster Auth for Tokyo (Spoke)
-data "aws_eks_cluster_auth" "tokyo" {
-  provider   = aws.tokyo
-  name       = module.eks_tokyo.cluster_name
-  depends_on = [module.eks_tokyo]
-}
-
-
