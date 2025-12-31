@@ -32,8 +32,6 @@ module "dsql_tokyo" {
     Name   = "${local.name_prefix}-dsql-tokyo"
     Region = "ap-northeast-1"
   })
-
-  depends_on = [module.dsql_seoul]
 }
 
 # Peering Seoul to Tokyo
