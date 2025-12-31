@@ -48,4 +48,43 @@ data "aws_eks_cluster_auth" "tokyo" {
   depends_on = [module.eks_tokyo]
 }
 
+resource "kubernetes_namespace_v1" "monitoring_seoul" {
+  provider = kubernetes.seoul  
+
+  metadata {
+    name = "monitoring"
+  }
+}
+
+resource "kubernetes_namespace_v1" "monitoring_tokyo" {
+  provider = kubernetes.tokyo
+
+  metadata {
+    name = "monitoring"
+  }
+}
+
+
+module "monitoring" {
+  source = "./monitoring"
+
+  depends_on = [
+    kubernetes_namespace_v1.monitoring_seoul,
+    kubernetes_namespace_v1.monitoring_tokyo
+  ]
+
+  providers = {
+    helm.seoul       = helm.seoul
+    kubernetes.seoul = kubernetes.seoul
+    helm.tokyo       = helm.tokyo
+    kubernetes.tokyo = kubernetes.tokyo
+  }
+
+  metrics_username = var.metrics_username
+  metrics_password = var.metrics_password
+  logs_username    = var.logs_username
+  logs_password    = var.logs_password
+  traces_username  = var.traces_username
+  traces_password  = var.traces_password
+}
 
