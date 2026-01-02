@@ -119,129 +119,49 @@ resource "aws_vpc_endpoint" "dsql_tokyo" {
   })
 }
 
+
 ###############################################################
-# DSQL IRSA (IAM Roles for Service Accounts)
+# Kubernetes Secrets for DSQL Connection
 ###############################################################
 
-# Policy for Seoul DSQL Connection
-resource "aws_iam_policy" "dsql_connect_seoul" {
-  name        = "${local.name_prefix}-dsql-connect-seoul"
-  description = "Allow DB connection to Seoul DSQL Cluster"
+# Seoul Cluster (Hub)
+resource "kubernetes_secret_v1" "wallet_db_config_seoul" {
+  provider = kubernetes.seoul
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "dsql:DbConnect",
-          "dsql:DbConnectAdmin"
-        ]
-        Effect   = "Allow"
-        Resource = module.dsql_seoul.arn
-      },
-      {
-        Action = [
-          "dsql:DbConnect",
-          "dsql:DbConnectAdmin"
-        ]
-        Effect   = "Allow"
-        Resource = "${module.dsql_seoul.arn}/*"
-      }
-    ]
-  })
+  metadata {
+    name      = "wallet-db-secret"
+    namespace = "default"
+  }
 
-  tags = local.tags
+  data = {
+    "ConnectionStrings__walletdb" = "Host=${module.dsql_seoul.identifier}.dsql.ap-northeast-2.on.aws;Database=postgres;Username=admin;SslMode=Require;"
+    "Dsql__Region"                = "ap-northeast-2"
+    "Dsql__TokenRefreshMinutes"   = "12"
+  }
+
+  type = "Opaque"
+
+  depends_on = [module.eks_seoul]
 }
 
-# Policy for Tokyo DSQL Connection
-resource "aws_iam_policy" "dsql_connect_tokyo" {
-  provider    = aws.tokyo
-  name        = "${local.name_prefix}-dsql-connect-tokyo"
-  description = "Allow DB connection to Tokyo DSQL Cluster"
+# Tokyo Cluster (Spoke)
+resource "kubernetes_secret_v1" "wallet_db_config_tokyo" {
+  provider = kubernetes.tokyo
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "dsql:DbConnect",
-          "dsql:DbConnectAdmin"
-        ]
-        Effect   = "Allow"
-        Resource = module.dsql_tokyo.arn
-      },
-      {
-        Action = [
-          "dsql:DbConnect",
-          "dsql:DbConnectAdmin"
-        ]
-        Effect   = "Allow"
-        Resource = "${module.dsql_tokyo.arn}/*"
-      }
-    ]
-  })
+  metadata {
+    name      = "wallet-db-secret"
+    namespace = "default"
+  }
 
-  tags = local.tags
-}
+  data = {
+    "ConnectionStrings__walletdb" = "Host=${module.dsql_tokyo.identifier}.dsql.ap-northeast-1.on.aws;Database=postgres;Username=admin;SslMode=Require;"
+    "Dsql__Region"                = "ap-northeast-1"
+    "Dsql__TokenRefreshMinutes"   = "12"
+  }
 
-# Role for Seoul Cluster
-resource "aws_iam_role" "service_account_seoul" {
-  name = "${local.name_prefix}-sa-seoul"
+  type = "Opaque"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Federated = module.eks_seoul.oidc_provider_arn
-        }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringEquals = {
-            "${replace(module.eks_seoul.oidc_provider_arn, "https://", "")}:sub" = "system:serviceaccount:default:dsql-app"
-          }
-        }
-      }
-    ]
-  })
-
-  tags = local.tags
-}
-
-resource "aws_iam_role_policy_attachment" "sa_seoul_dsql" {
-  role       = aws_iam_role.service_account_seoul.name
-  policy_arn = aws_iam_policy.dsql_connect_seoul.arn
-}
-
-# Role for Tokyo Cluster
-resource "aws_iam_role" "service_account_tokyo" {
-  name = "${local.name_prefix}-sa-tokyo"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Federated = module.eks_tokyo.oidc_provider_arn
-        }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringEquals = {
-            "${replace(module.eks_tokyo.oidc_provider_arn, "https://", "")}:sub" = "system:serviceaccount:default:dsql-app"
-          }
-        }
-      }
-    ]
-  })
-
-  tags = local.tags
-}
-
-resource "aws_iam_role_policy_attachment" "sa_tokyo_dsql" {
-  role       = aws_iam_role.service_account_tokyo.name
-  policy_arn = aws_iam_policy.dsql_connect_tokyo.arn
+  depends_on = [module.eks_tokyo]
 }
 
 ###############################################################

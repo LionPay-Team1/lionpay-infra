@@ -23,6 +23,11 @@ output "oidc_provider_arn" {
   value       = module.eks.oidc_provider_arn
 }
 
+output "oidc_provider" {
+  description = "OIDC provider URL without https:// prefix (for IAM trust policy conditions)"
+  value       = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
+}
+
 output "node_security_group_id" {
   description = "Security group ID for the nodes"
   value       = module.eks.node_security_group_id
