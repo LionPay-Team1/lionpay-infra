@@ -18,7 +18,7 @@ module "eks" {
   vpc_id     = var.vpc_id
   subnet_ids = var.private_subnets
 
-  enable_cluster_creator_admin_permissions = true
+  enable_cluster_creator_admin_permissions = false
 
   # Disable Auto Mode - using Managed Node Group + Karpenter instead
   compute_config = {
