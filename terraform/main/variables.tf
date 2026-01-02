@@ -191,3 +191,17 @@ variable "grafana_cloud_logs_url" {
 variable "grafana_cloud_traces_url" {
   type = string
 }
+
+variable "fleetmanagement_url" {
+  type = string
+}
+
+variable "fleetmanagement_username" {
+  type      = string
+  sensitive = true
+}
+
+variable "fleetmanagement_password" {
+  type      = string
+  sensitive = true
+}

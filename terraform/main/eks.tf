@@ -301,6 +301,10 @@ module "alloy_seoul" {
   grafana_cloud_metrics_url = var.grafana_cloud_metrics_url
   grafana_cloud_logs_url    = var.grafana_cloud_logs_url
   grafana_cloud_traces_url  = var.grafana_cloud_traces_url
+
+  fleetmanagement_url      = var.fleetmanagement_url
+  fleetmanagement_username = var.fleetmanagement_username
+  fleetmanagement_password = var.fleetmanagement_password
 }
 
 module "alloy_tokyo" {
@@ -323,4 +327,8 @@ module "alloy_tokyo" {
   grafana_cloud_metrics_url = var.grafana_cloud_metrics_url
   grafana_cloud_logs_url    = var.grafana_cloud_logs_url
   grafana_cloud_traces_url  = var.grafana_cloud_traces_url
+
+  fleetmanagement_url      = var.fleetmanagement_url
+  fleetmanagement_username = var.fleetmanagement_username
+  fleetmanagement_password = var.fleetmanagement_password
 }
