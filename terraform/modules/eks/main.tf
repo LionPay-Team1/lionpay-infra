@@ -18,7 +18,7 @@ module "eks" {
   vpc_id     = var.vpc_id
   subnet_ids = var.private_subnets
 
-  enable_cluster_creator_admin_permissions = true
+  enable_cluster_creator_admin_permissions = false
 
   # Disable Auto Mode - using Managed Node Group + Karpenter instead
   compute_config = {
@@ -57,12 +57,27 @@ module "eks" {
   }
 
   # Access entry for Karpenter nodes (EC2 type doesn't need policy_associations)
-  access_entries = {
-    karpenter_nodes = {
-      principal_arn = aws_iam_role.karpenter_node_role.arn
-      type          = "EC2_LINUX"
+  access_entries = merge(
+    {
+      karpenter_nodes = {
+        principal_arn = aws_iam_role.karpenter_node_role.arn
+        type          = "EC2_LINUX"
+      }
+    },
+    {
+      for arn in var.admin_principal_arns : arn => {
+        principal_arn = arn
+        policy_associations = {
+          admin = {
+            policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+            access_scope = {
+              type = "cluster"
+            }
+          }
+        }
+      }
     }
-  }
+  )
 
   node_security_group_tags = merge(var.tags, {
     # NOTE - if creating multiple security groups with this module, only tag the

@@ -132,12 +132,18 @@ resource "aws_iam_policy" "dsql_connect_seoul" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action   = "dsql:DbConnect"
+        Action = [
+          "dsql:DbConnect",
+          "dsql:DbConnectAdmin"
+        ]
         Effect   = "Allow"
         Resource = module.dsql_seoul.arn
       },
       {
-        Action   = "dsql:DbConnect"
+        Action = [
+          "dsql:DbConnect",
+          "dsql:DbConnectAdmin"
+        ]
         Effect   = "Allow"
         Resource = "${module.dsql_seoul.arn}/*"
       }
@@ -157,12 +163,18 @@ resource "aws_iam_policy" "dsql_connect_tokyo" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action   = "dsql:DbConnect"
+        Action = [
+          "dsql:DbConnect",
+          "dsql:DbConnectAdmin"
+        ]
         Effect   = "Allow"
         Resource = module.dsql_tokyo.arn
       },
       {
-        Action   = "dsql:DbConnect"
+        Action = [
+          "dsql:DbConnect",
+          "dsql:DbConnectAdmin"
+        ]
         Effect   = "Allow"
         Resource = "${module.dsql_tokyo.arn}/*"
       }
@@ -230,4 +242,48 @@ resource "aws_iam_role" "service_account_tokyo" {
 resource "aws_iam_role_policy_attachment" "sa_tokyo_dsql" {
   role       = aws_iam_role.service_account_tokyo.name
   policy_arn = aws_iam_policy.dsql_connect_tokyo.arn
+}
+
+###############################################################
+# Kubernetes Secrets for DSQL Connection
+###############################################################
+
+# Seoul Cluster (Hub)
+resource "kubernetes_secret_v1" "wallet_db_config_seoul" {
+  provider = kubernetes.seoul
+
+  metadata {
+    name      = "wallet-db-secret"
+    namespace = "default"
+  }
+
+  data = {
+    "ConnectionStrings__walletdb" = "Host=${module.dsql_seoul.identifier}.dsql.ap-northeast-2.on.aws;Database=postgres;Username=admin;SslMode=Require;"
+    "Dsql__Region"                = "ap-northeast-2"
+    "Dsql__TokenRefreshMinutes"   = "12"
+  }
+
+  type = "Opaque"
+
+  depends_on = [module.eks_seoul]
+}
+
+# Tokyo Cluster (Spoke)
+resource "kubernetes_secret_v1" "wallet_db_config_tokyo" {
+  provider = kubernetes.tokyo
+
+  metadata {
+    name      = "wallet-db-secret"
+    namespace = "default"
+  }
+
+  data = {
+    "ConnectionStrings__walletdb" = "Host=${module.dsql_tokyo.identifier}.dsql.ap-northeast-1.on.aws;Database=postgres;Username=admin;SslMode=Require;"
+    "Dsql__Region"                = "ap-northeast-1"
+    "Dsql__TokenRefreshMinutes"   = "12"
+  }
+
+  type = "Opaque"
+
+  depends_on = [module.eks_tokyo]
 }

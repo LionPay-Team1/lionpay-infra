@@ -23,6 +23,12 @@ variable "kubernetes_version" {
   default     = "1.34"
 }
 
+variable "admin_principal_arns" {
+  description = "List of IAM ARNs to grant EKS Cluster Admin permissions"
+  type        = list(string)
+  default     = []
+}
+
 ###############################################################
 # ArgoCD Capability Variables
 ###############################################################

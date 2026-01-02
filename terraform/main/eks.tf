@@ -27,11 +27,12 @@ module "eks_seoul" {
     helm = helm.seoul
   }
 
-  cluster_name    = local.seoul_cluster_name
-  cluster_version = var.kubernetes_version
-  vpc_id          = module.vpc_seoul.vpc_id
-  private_subnets = module.vpc_seoul.private_subnets
-  environment     = var.env
+  cluster_name         = local.seoul_cluster_name
+  cluster_version      = var.kubernetes_version
+  vpc_id               = module.vpc_seoul.vpc_id
+  private_subnets      = module.vpc_seoul.private_subnets
+  environment          = var.env
+  admin_principal_arns = var.admin_principal_arns
 
   # Managed Node Group settings
   mng_instance_types = var.mng_instance_types
@@ -53,17 +54,19 @@ module "eks_tokyo" {
     helm = helm.tokyo
   }
 
-  cluster_name    = local.tokyo_cluster_name
-  cluster_version = var.kubernetes_version
-  vpc_id          = module.vpc_tokyo.vpc_id
-  private_subnets = module.vpc_tokyo.private_subnets
-  environment     = var.env
+  cluster_name         = local.tokyo_cluster_name
+  cluster_version      = var.kubernetes_version
+  vpc_id               = module.vpc_tokyo.vpc_id
+  private_subnets      = module.vpc_tokyo.private_subnets
+  environment          = var.env
+  admin_principal_arns = var.admin_principal_arns
 
   # Managed Node Group settings
   mng_instance_types = var.mng_instance_types
   mng_min_size       = var.mng_min_size
   mng_max_size       = var.mng_max_size
   mng_desired_size   = var.mng_desired_size
+
 
   # Karpenter Helm chart credentials
 
