@@ -286,10 +286,18 @@ module "alloy_seoul" {
     kubernetes = kubernetes.seoul
   }
 
-  cluster_name   = local.seoul_cluster_name
-  fleet_url      = var.fleet_url
-  fleet_username = var.fleet_username
-  fleet_password = var.fleet_password
+  cluster_name = local.seoul_cluster_name
+
+  grafana_cloud_metrics_username = var.grafana_cloud_metrics_username
+  grafana_cloud_metrics_password = var.grafana_cloud_metrics_password
+  grafana_cloud_logs_username    = var.grafana_cloud_logs_username
+  grafana_cloud_logs_password    = var.grafana_cloud_logs_password
+  grafana_cloud_traces_username  = var.grafana_cloud_traces_username
+  grafana_cloud_traces_password  = var.grafana_cloud_traces_password
+
+  grafana_cloud_metrics_url = var.grafana_cloud_metrics_url
+  grafana_cloud_logs_url    = var.grafana_cloud_logs_url
+  grafana_cloud_traces_url  = var.grafana_cloud_traces_url
 }
 
 module "alloy_tokyo" {
@@ -300,8 +308,16 @@ module "alloy_tokyo" {
     kubernetes = kubernetes.tokyo
   }
 
-  cluster_name   = local.tokyo_cluster_name
-  fleet_url      = var.fleet_url
-  fleet_username = var.fleet_username
-  fleet_password = var.fleet_password
+  cluster_name = local.tokyo_cluster_name
+
+  grafana_cloud_metrics_username = var.grafana_cloud_metrics_username
+  grafana_cloud_metrics_password = var.grafana_cloud_metrics_password
+  grafana_cloud_logs_username    = var.grafana_cloud_logs_username
+  grafana_cloud_logs_password    = var.grafana_cloud_logs_password
+  grafana_cloud_traces_username  = var.grafana_cloud_traces_username
+  grafana_cloud_traces_password  = var.grafana_cloud_traces_password
+
+  grafana_cloud_metrics_url = var.grafana_cloud_metrics_url
+  grafana_cloud_logs_url    = var.grafana_cloud_logs_url
+  grafana_cloud_traces_url  = var.grafana_cloud_traces_url
 }

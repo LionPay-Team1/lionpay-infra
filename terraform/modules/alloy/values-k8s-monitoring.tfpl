@@ -1,0 +1,53 @@
+cluster:
+  name: ${cluster_name}
+
+destinations:
+  - name: grafana-cloud-metrics
+    type: prometheus
+    url: ${grafana_cloud_metrics_url}
+    auth:
+      type: basic
+      username: ${grafana_cloud_metrics_username}
+      password: ${grafana_cloud_metrics_password}
+
+  - name: grafana-cloud-logs
+    type: loki
+    url: ${grafana_cloud_logs_url}
+    auth:
+      type: basic
+      username: ${grafana_cloud_logs_username}
+      password: ${grafana_cloud_logs_password}
+
+  - name: grafana-cloud-traces
+    type: otlp
+    protocol: http
+    url: ${grafana_cloud_traces_url}
+    auth:
+      type: basic
+      username: ${grafana_cloud_traces_username}
+      password: ${grafana_cloud_traces_password}
+
+clusterMetrics:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+podLogs:
+  enabled: true
+
+alloy-metrics:
+  enabled: true
+
+alloy-logs:
+  enabled: true
+
+alloy-receiver:
+  enabled: true
+
+applicationObservability:
+  enabled: true
+  receivers:
+    otlp:
+      grpc:
+        enabled: true
