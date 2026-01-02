@@ -31,6 +31,12 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "admin_principal_arns" {
+  description = "List of IAM ARNs to grant EKS Cluster Admin permissions"
+  type        = list(string)
+  default     = []
+}
+
 ###############################################################
 # Managed Node Group Variables (Karpenter Controller & Addons)
 ###############################################################
