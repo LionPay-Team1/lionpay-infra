@@ -45,6 +45,26 @@ variable "replica_regions" {
   default = []
 }
 
+variable "global_secondary_indexes" {
+  description = "List of Global Secondary Indexes"
+  type = list(object({
+    name               = string
+    hash_key           = string
+    hash_key_type      = string
+    range_key          = optional(string)
+    range_key_type     = optional(string)
+    projection_type    = optional(string, "ALL")
+    non_key_attributes = optional(list(string))
+  }))
+  default = []
+}
+
+variable "server_side_encryption" {
+  description = "Enable server-side encryption"
+  type        = bool
+  default     = true
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

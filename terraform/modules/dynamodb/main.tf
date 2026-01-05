@@ -28,8 +28,42 @@ resource "aws_dynamodb_table" "this" {
     }
   }
 
+  # GSI용 추가 속성 정의
+  dynamic "attribute" {
+    for_each = var.global_secondary_indexes
+    content {
+      name = attribute.value.hash_key
+      type = attribute.value.hash_key_type
+    }
+  }
+
+  dynamic "attribute" {
+    for_each = [for gsi in var.global_secondary_indexes : gsi if gsi.range_key != null]
+    content {
+      name = attribute.value.range_key
+      type = attribute.value.range_key_type
+    }
+  }
+
+  # Global Secondary Indexes
+  dynamic "global_secondary_index" {
+    for_each = var.global_secondary_indexes
+    content {
+      name               = global_secondary_index.value.name
+      hash_key           = global_secondary_index.value.hash_key
+      range_key          = global_secondary_index.value.range_key
+      projection_type    = global_secondary_index.value.projection_type
+      non_key_attributes = global_secondary_index.value.projection_type == "INCLUDE" ? global_secondary_index.value.non_key_attributes : null
+    }
+  }
+
   point_in_time_recovery {
     enabled = var.point_in_time_recovery
+  }
+
+  # Server-Side Encryption
+  server_side_encryption {
+    enabled = var.server_side_encryption
   }
 
   deletion_protection_enabled = var.deletion_protection

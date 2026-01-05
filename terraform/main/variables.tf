@@ -205,3 +205,25 @@ variable "fleetmanagement_password" {
   type      = string
   sensitive = true
 }
+
+###############################################################
+# JWT Variables
+###############################################################
+
+variable "jwt_secret" {
+  description = "Secret key for JWT signing"
+  type        = string
+  sensitive   = true
+}
+
+variable "jwt_issuer" {
+  description = "JWT Issuer"
+  type        = string
+  default     = "lionpay-auth"
+}
+
+variable "jwt_audiences" {
+  description = "JWT Audiences (comma-separated)"
+  type        = string
+  default     = "lionpay-app,lionpay-management"
+}

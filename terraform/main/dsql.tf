@@ -120,46 +120,9 @@ resource "aws_vpc_endpoint" "dsql_tokyo" {
 }
 
 
+
 ###############################################################
 # Kubernetes Secrets for DSQL Connection
 ###############################################################
 
-# Seoul Cluster (Hub)
-resource "kubernetes_secret_v1" "wallet_db_config_seoul" {
-  provider = kubernetes.seoul
-
-  metadata {
-    name      = "wallet-db-secret"
-    namespace = "default"
-  }
-
-  data = {
-    "ConnectionStrings__walletdb" = "Host=${module.dsql_seoul.identifier}.dsql.ap-northeast-2.on.aws;Database=postgres;Username=admin;SslMode=Require;"
-    "Dsql__Region"                = "ap-northeast-2"
-    "Dsql__TokenRefreshMinutes"   = "12"
-  }
-
-  type = "Opaque"
-
-  depends_on = [module.eks_seoul]
-}
-
-# Tokyo Cluster (Spoke)
-resource "kubernetes_secret_v1" "wallet_db_config_tokyo" {
-  provider = kubernetes.tokyo
-
-  metadata {
-    name      = "wallet-db-secret"
-    namespace = "default"
-  }
-
-  data = {
-    "ConnectionStrings__walletdb" = "Host=${module.dsql_tokyo.identifier}.dsql.ap-northeast-1.on.aws;Database=postgres;Username=admin;SslMode=Require;"
-    "Dsql__Region"                = "ap-northeast-1"
-    "Dsql__TokenRefreshMinutes"   = "12"
-  }
-
-  type = "Opaque"
-
-  depends_on = [module.eks_tokyo]
-}
+# Kubernetes Secrets have been moved to k8s_secrets.tf and merged into 'app-secrets'.
