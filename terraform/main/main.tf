@@ -29,6 +29,11 @@ locals {
   seoul_cluster_name = "${local.name_prefix}-seoul"
   tokyo_cluster_name = "${local.name_prefix}-tokyo"
 
+  dynamodb_hash_key  = "pk"
+  dynamodb_range_key = "sk"
+  jwt_issuer         = "lionpay-auth"
+  jwt_audiences      = "lionpay-app,lionpay-management"
+
   tags = merge(var.tags, {
     Project     = var.project_name
     Environment = var.env

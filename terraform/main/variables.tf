@@ -128,14 +128,6 @@ variable "dynamodb_table_name" {
   type = string
 }
 
-variable "dynamodb_hash_key" {
-  type = string
-}
-
-variable "dynamodb_range_key" {
-  type    = string
-  default = null
-}
 
 ###############################################################
 # S3 Variables
@@ -216,14 +208,3 @@ variable "jwt_secret" {
   sensitive   = true
 }
 
-variable "jwt_issuer" {
-  description = "JWT Issuer"
-  type        = string
-  default     = "lionpay-auth"
-}
-
-variable "jwt_audiences" {
-  description = "JWT Audiences (comma-separated)"
-  type        = string
-  default     = "lionpay-app,lionpay-management"
-}
