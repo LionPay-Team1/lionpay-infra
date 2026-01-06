@@ -78,7 +78,7 @@ resource "aws_iam_role" "service_account_seoul" {
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           StringEquals = {
-            "${module.eks_seoul.oidc_provider}:sub" = "system:serviceaccount:default:lionpay-app"
+            "${module.eks_seoul.oidc_provider}:sub" = "system:serviceaccount:${local.app_namespace}:lionpay-app"
             "${module.eks_seoul.oidc_provider}:aud" = "sts.amazonaws.com"
           }
         }
@@ -114,7 +114,7 @@ resource "aws_iam_role" "service_account_tokyo" {
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           StringEquals = {
-            "${module.eks_tokyo.oidc_provider}:sub" = "system:serviceaccount:default:lionpay-app"
+            "${module.eks_tokyo.oidc_provider}:sub" = "system:serviceaccount:${local.app_namespace}:lionpay-app"
             "${module.eks_tokyo.oidc_provider}:aud" = "sts.amazonaws.com"
           }
         }
@@ -144,7 +144,7 @@ resource "kubernetes_service_account_v1" "lionpay_app_seoul" {
 
   metadata {
     name      = "lionpay-app"
-    namespace = "default"
+    namespace = local.app_namespace
     annotations = {
       "eks.amazonaws.com/role-arn" = aws_iam_role.service_account_seoul.arn
     }
@@ -158,7 +158,7 @@ resource "kubernetes_service_account_v1" "lionpay_app_tokyo" {
 
   metadata {
     name      = "lionpay-app"
-    namespace = "default"
+    namespace = local.app_namespace
     annotations = {
       "eks.amazonaws.com/role-arn" = aws_iam_role.service_account_tokyo.arn
     }

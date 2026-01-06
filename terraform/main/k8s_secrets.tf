@@ -8,7 +8,7 @@ resource "kubernetes_secret_v1" "app_secrets_seoul" {
 
   metadata {
     name      = "app-secrets"
-    namespace = "default"
+    namespace = local.app_namespace
   }
 
   data = {
@@ -26,7 +26,7 @@ resource "kubernetes_secret_v1" "app_secrets_tokyo" {
 
   metadata {
     name      = "app-secrets"
-    namespace = "default"
+    namespace = local.app_namespace
   }
 
   data = {

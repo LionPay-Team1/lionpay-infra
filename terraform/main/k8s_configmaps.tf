@@ -8,7 +8,7 @@ resource "kubernetes_config_map_v1" "auth_config_seoul" {
 
   metadata {
     name      = "auth-config"
-    namespace = "default"
+    namespace = local.app_namespace
   }
 
   data = {
@@ -28,7 +28,7 @@ resource "kubernetes_config_map_v1" "wallet_config_seoul" {
 
   metadata {
     name      = "wallet-config"
-    namespace = "default"
+    namespace = local.app_namespace
   }
 
   data = {
@@ -49,7 +49,7 @@ resource "kubernetes_config_map_v1" "auth_config_tokyo" {
 
   metadata {
     name      = "auth-config"
-    namespace = "default"
+    namespace = local.app_namespace
   }
 
   data = {
@@ -69,7 +69,7 @@ resource "kubernetes_config_map_v1" "wallet_config_tokyo" {
 
   metadata {
     name      = "wallet-config"
-    namespace = "default"
+    namespace = local.app_namespace
   }
 
   data = {

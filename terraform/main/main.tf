@@ -33,6 +33,7 @@ locals {
   dynamodb_range_key = "sk"
   jwt_issuer         = "lionpay-auth"
   jwt_audiences      = "lionpay-app,lionpay-management"
+  app_namespace      = "lionpay"
 
   tags = merge(var.tags, {
     Project     = var.project_name
