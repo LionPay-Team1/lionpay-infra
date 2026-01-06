@@ -88,6 +88,16 @@ output "dsql_iam_role_tokyo_arn" {
   value       = aws_iam_role.service_account_tokyo.arn
 }
 
+output "dsql_seoul_id" {
+  description = "Aurora DSQL Seoul cluster Identifier"
+  value       = module.dsql_seoul.identifier
+}
+
+output "dsql_tokyo_id" {
+  description = "Aurora DSQL Tokyo cluster Identifier"
+  value       = module.dsql_tokyo.identifier
+}
+
 ###############################################################
 # ArgoCD Outputs
 ###############################################################
