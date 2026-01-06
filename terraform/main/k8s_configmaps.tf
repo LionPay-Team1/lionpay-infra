@@ -16,7 +16,7 @@ resource "kubernetes_config_map_v1" "auth_config_seoul" {
     "DYNAMODB_TABLE_NAME"         = var.dynamodb_table_name
     "JWT_ISSUER"                  = local.jwt_issuer
     "JWT_AUDIENCES"               = local.jwt_audiences
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://alloy.monitoring.svc.cluster.local:4317"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
     "OTEL_SERVICE_NAME"           = "lionpay-auth"
   }
 
@@ -36,7 +36,7 @@ resource "kubernetes_config_map_v1" "wallet_config_seoul" {
     "WALLETDB_CLUSTER_ENDPOINT"   = "${module.dsql_seoul.identifier}.dsql.ap-northeast-2.on.aws"
     "JWT_ISSUER"                  = local.jwt_issuer
     "JWT_AUDIENCES"               = local.jwt_audiences
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://alloy.monitoring.svc.cluster.local:4317"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
     "OTEL_SERVICE_NAME"           = "lionpay-wallet"
   }
 
@@ -57,7 +57,7 @@ resource "kubernetes_config_map_v1" "auth_config_tokyo" {
     "DYNAMODB_TABLE_NAME"         = var.dynamodb_table_name
     "JWT_ISSUER"                  = local.jwt_issuer
     "JWT_AUDIENCES"               = local.jwt_audiences
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://alloy.monitoring.svc.cluster.local:4317"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
     "OTEL_SERVICE_NAME"           = "lionpay-auth"
   }
 
@@ -77,7 +77,7 @@ resource "kubernetes_config_map_v1" "wallet_config_tokyo" {
     "WALLETDB_CLUSTER_ENDPOINT"   = "${module.dsql_tokyo.identifier}.dsql.ap-northeast-1.on.aws"
     "JWT_ISSUER"                  = local.jwt_issuer
     "JWT_AUDIENCES"               = local.jwt_audiences
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "http://alloy.monitoring.svc.cluster.local:4317"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
     "OTEL_SERVICE_NAME"           = "lionpay-wallet"
   }
 

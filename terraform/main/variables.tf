@@ -141,46 +141,39 @@ variable "s3_bucket_name" {
 # Grafana Cloud Variables
 ###############################################################
 
-
-variable "grafana_cloud_metrics_username" {
-  type      = string
-  sensitive = true
-}
-
-variable "grafana_cloud_metrics_password" {
-  type      = string
-  sensitive = true
-}
-
-variable "grafana_cloud_logs_username" {
-  type      = string
-  sensitive = true
-}
-
-variable "grafana_cloud_logs_password" {
-  type      = string
-  sensitive = true
-}
-
-variable "grafana_cloud_traces_username" {
-  type      = string
-  sensitive = true
-}
-
-variable "grafana_cloud_traces_password" {
-  type      = string
-  sensitive = true
-}
-
-variable "grafana_cloud_metrics_url" {
+variable "destinations_prometheus_url" {
   type = string
 }
 
-variable "grafana_cloud_logs_url" {
+variable "destinations_prometheus_username" {
   type = string
 }
 
-variable "grafana_cloud_traces_url" {
+variable "destinations_prometheus_password" {
+  type = string
+}
+
+variable "destinations_loki_url" {
+  type = string
+}
+
+variable "destinations_loki_username" {
+  type = string
+}
+
+variable "destinations_loki_password" {
+  type = string
+}
+
+variable "destinations_otlp_url" {
+  type = string
+}
+
+variable "destinations_otlp_username" {
+  type = string
+}
+
+variable "destinations_otlp_password" {
   type = string
 }
 
@@ -189,13 +182,15 @@ variable "fleetmanagement_url" {
 }
 
 variable "fleetmanagement_username" {
-  type      = string
-  sensitive = true
+  type = string
 }
 
 variable "fleetmanagement_password" {
-  type      = string
-  sensitive = true
+  type = string
+}
+
+variable "otel_exporter_otlp_endpoint" {
+  type = string
 }
 
 ###############################################################

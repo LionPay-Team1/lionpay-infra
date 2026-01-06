@@ -281,8 +281,8 @@ resource "null_resource" "karpenter_tokyo_apply" {
 # Alloy (Grafana Cloud Monitoring) - Seoul & Tokyo
 ###############################################################
 
-module "alloy_seoul" {
-  source = "../modules/alloy"
+module "monitoring_seoul" {
+  source = "../modules/grafana-k8s-monitoring"
 
   providers = {
     helm       = helm.seoul
@@ -291,24 +291,25 @@ module "alloy_seoul" {
 
   cluster_name = local.seoul_cluster_name
 
-  grafana_cloud_metrics_username = var.grafana_cloud_metrics_username
-  grafana_cloud_metrics_password = var.grafana_cloud_metrics_password
-  grafana_cloud_logs_username    = var.grafana_cloud_logs_username
-  grafana_cloud_logs_password    = var.grafana_cloud_logs_password
-  grafana_cloud_traces_username  = var.grafana_cloud_traces_username
-  grafana_cloud_traces_password  = var.grafana_cloud_traces_password
+  destinations_prometheus_url      = var.destinations_prometheus_url
+  destinations_prometheus_username = var.destinations_prometheus_username
+  destinations_prometheus_password = var.destinations_prometheus_password
 
-  grafana_cloud_metrics_url = var.grafana_cloud_metrics_url
-  grafana_cloud_logs_url    = var.grafana_cloud_logs_url
-  grafana_cloud_traces_url  = var.grafana_cloud_traces_url
+  destinations_loki_url      = var.destinations_loki_url
+  destinations_loki_username = var.destinations_loki_username
+  destinations_loki_password = var.destinations_loki_password
+
+  destinations_otlp_url      = var.destinations_otlp_url
+  destinations_otlp_username = var.destinations_otlp_username
+  destinations_otlp_password = var.destinations_otlp_password
 
   fleetmanagement_url      = var.fleetmanagement_url
   fleetmanagement_username = var.fleetmanagement_username
   fleetmanagement_password = var.fleetmanagement_password
 }
 
-module "alloy_tokyo" {
-  source = "../modules/alloy"
+module "monitoring_tokyo" {
+  source = "../modules/grafana-k8s-monitoring"
 
   providers = {
     helm       = helm.tokyo
@@ -317,16 +318,17 @@ module "alloy_tokyo" {
 
   cluster_name = local.tokyo_cluster_name
 
-  grafana_cloud_metrics_username = var.grafana_cloud_metrics_username
-  grafana_cloud_metrics_password = var.grafana_cloud_metrics_password
-  grafana_cloud_logs_username    = var.grafana_cloud_logs_username
-  grafana_cloud_logs_password    = var.grafana_cloud_logs_password
-  grafana_cloud_traces_username  = var.grafana_cloud_traces_username
-  grafana_cloud_traces_password  = var.grafana_cloud_traces_password
+  destinations_prometheus_url      = var.destinations_prometheus_url
+  destinations_prometheus_username = var.destinations_prometheus_username
+  destinations_prometheus_password = var.destinations_prometheus_password
 
-  grafana_cloud_metrics_url = var.grafana_cloud_metrics_url
-  grafana_cloud_logs_url    = var.grafana_cloud_logs_url
-  grafana_cloud_traces_url  = var.grafana_cloud_traces_url
+  destinations_loki_url      = var.destinations_loki_url
+  destinations_loki_username = var.destinations_loki_username
+  destinations_loki_password = var.destinations_loki_password
+
+  destinations_otlp_url      = var.destinations_otlp_url
+  destinations_otlp_username = var.destinations_otlp_username
+  destinations_otlp_password = var.destinations_otlp_password
 
   fleetmanagement_url      = var.fleetmanagement_url
   fleetmanagement_username = var.fleetmanagement_username
