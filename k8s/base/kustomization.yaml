@@ -3,10 +3,7 @@ kind: Kustomization
 namespace: lionpay
 
 resources:
-  - namespace.yaml
   - service-account.yaml
-  - secret.yaml
-  - configmap.yaml
   - auth-service.yaml
   - auth-deployment.yaml
   - wallet-service.yaml

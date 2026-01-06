@@ -1,28 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-deployment
+  name: wallet-deployment
   labels:
-    app: auth
+    app: wallet
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: auth
+      app: wallet
   template:
     metadata:
       labels:
-        app: auth
+        app: wallet
     spec:
       serviceAccountName: lionpay-app
       containers:
-        - name: auth
-          image: 727646470302.dkr.ecr.ap-northeast-2.amazonaws.com/lionpay-auth:arm64
+        - name: wallet
+          image: 727646470302.dkr.ecr.ap-northeast-2.amazonaws.com/lionpay-wallet:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           envFrom:
             - configMapRef:
-                name: auth-config
+                name: wallet-config
             - secretRef:
                 name: app-secrets
           env:
@@ -38,12 +39,14 @@ spec:
               memory: "512Mi"
               cpu: "500m"
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 15
             periodSeconds: 10
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /health
               port: 8080
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 10

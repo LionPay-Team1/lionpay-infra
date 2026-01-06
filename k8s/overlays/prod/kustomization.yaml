@@ -13,4 +13,13 @@ images:
     newTag: "latest"
 
 commonLabels:
-  environment: dev
+  environment: prod
+
+patches:
+  - path: hpa-patch.yaml
+
+replicas:
+  - name: auth-deployment
+    count: 3
+  - name: wallet-deployment
+    count: 3

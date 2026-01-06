@@ -8,15 +8,12 @@ resources:
 
 images:
   - name: 727646470302.dkr.ecr.ap-northeast-2.amazonaws.com/lionpay-auth
-    newTag: "v1.0.0"
+    newTag: "latest"
   - name: 727646470302.dkr.ecr.ap-northeast-2.amazonaws.com/lionpay-wallet
-    newTag: "v1.0.0"
+    newTag: "latest"
 
 commonLabels:
-  environment: prod
+  environment: dev
 
-replicas:
-  - name: auth-deployment
-    count: 3
-  - name: wallet-deployment
-    count: 3
+patches:
+  - path: hpa-patch.yaml
