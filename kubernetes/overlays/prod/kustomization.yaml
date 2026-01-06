@@ -1,0 +1,22 @@
+﻿apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: lionpay
+
+resources:
+  - ../../base
+
+images:
+  - name: 727646470302.dkr.ecr.ap-northeast-2.amazonaws.com/lionpay-auth
+    newTag: "v1.0.0"
+  - name: 727646470302.dkr.ecr.ap-northeast-2.amazonaws.com/lionpay-wallet
+    newTag: "v1.0.0"
+
+commonLabels:
+  environment: prod
+
+replicas:
+  - name: auth-deployment
+    count: 3
+  - name: wallet-deployment
+    count: 3
