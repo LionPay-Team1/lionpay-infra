@@ -18,7 +18,7 @@ resource "kubernetes_config_map_v1" "auth_config_seoul" {
     "JWT_AUDIENCES"               = local.jwt_audiences
     "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
     "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
-    "OTEL_SERVICE_NAME"           = "lionpay-auth"
+    "OTEL_SERVICE_NAME"           = "auth"
   }
 
   depends_on = [module.eks_seoul]
@@ -39,7 +39,7 @@ resource "kubernetes_config_map_v1" "wallet_config_seoul" {
     "JWT_AUDIENCES"               = local.jwt_audiences
     "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
     "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
-    "OTEL_SERVICE_NAME"           = "lionpay-wallet"
+    "OTEL_SERVICE_NAME"           = "wallet"
   }
 
   depends_on = [module.eks_seoul]
@@ -60,7 +60,8 @@ resource "kubernetes_config_map_v1" "auth_config_tokyo" {
     "JWT_ISSUER"                  = local.jwt_issuer
     "JWT_AUDIENCES"               = local.jwt_audiences
     "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
-    "OTEL_SERVICE_NAME"           = "lionpay-auth"
+    "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
+    "OTEL_SERVICE_NAME"           = "auth"
   }
 
   depends_on = [module.eks_tokyo]
@@ -80,7 +81,8 @@ resource "kubernetes_config_map_v1" "wallet_config_tokyo" {
     "JWT_ISSUER"                  = local.jwt_issuer
     "JWT_AUDIENCES"               = local.jwt_audiences
     "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
-    "OTEL_SERVICE_NAME"           = "lionpay-wallet"
+    "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
+    "OTEL_SERVICE_NAME"           = "wallet"
   }
 
   depends_on = [module.eks_tokyo]
