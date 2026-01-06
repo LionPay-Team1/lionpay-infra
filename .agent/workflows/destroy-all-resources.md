@@ -33,9 +33,15 @@ cd terraform && ./destroy-all.ps1 -Env dev -Auto
 ## Script Phases
 
 1. **Terraform output 조회** - 클러스터 이름 등 리소스 정보 조회
-2. **Seoul 클러스터 정리** - Karpenter NodePool, EC2NodeClass, LoadBalancer 삭제
-3. **Tokyo 클러스터 정리** - Seoul과 동일
-4. **Orphaned EC2 정리** - Karpenter 태그 기반 남은 인스턴스 종료
+2. **Seoul 클러스터 정리**
+   - Karpenter NodePool, EC2NodeClass 삭제 (Finalizer 강제 제거 포함)
+   - LoadBalancer 서비스 삭제
+   - Terminating 상태의 네임스페이스 Finalizer 강제 제거
+3. **Tokyo 클러스터 정리** - Seoul과 동일 (동일 절차)
+4. **Orphaned AWS 리소스 정리**
+   - Orphaned EC2 인스턴스 (Karpenter 태그) 종료
+   - Orphaned ALB (k8s-lionpay-*) 및 Target Group 삭제
+   - Load Balancer 관련 Security Group 삭제
 5. **Terraform Destroy** - 나머지 인프라 삭제
 
 ## Parameters

@@ -7,9 +7,10 @@
     이 스크립트는 다음 순서로 리소스를 정리합니다:
     1. Terraform output에서 클러스터 정보 조회
     2. Seoul/Tokyo 클러스터의 Karpenter 리소스 정리
-    3. LoadBalancer 서비스 삭제
-    4. Orphaned EC2 인스턴스 종료
-    5. Terraform destroy 실행
+    3. LoadBalancer/Ingress 리소스 삭제 (ALB, TargetGroup 포함)
+    4. Terminating 상태의 네임스페이스 강제 정리
+    5. Orphaned EC2 인스턴스 종료
+    6. Terraform destroy 실행
 
 .PARAMETER Env
     삭제할 환경 이름 (예: dev, prod)
@@ -144,6 +145,65 @@ function Remove-KarpenterResources {
     return $true
 }
 
+function Force-RemoveFinalizers {
+    param([string]$ClusterName, [string]$Region)
+
+    Write-Log "Terminating 상태의 네임스페이스 확인 중..." "INFO"
+    $namespaces = kubectl get ns --field-selector=status.phase=Terminating -o jsonpath='{.items[*].metadata.name}' 2>&1
+    
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($namespaces)) {
+        $nsList = $namespaces -split "\s+"
+        foreach ($ns in $nsList) {
+            Write-Log "네임스페이스 '$ns' Finalizer 강제 제거 중..." "WARN"
+            # Finalizer 배열을 빈 배열로 패치
+            kubectl get namespace $ns -o json | `
+                ForEach-Object { $_ -replace '"finalizers": \[[^]]*\]', '"finalizers": []' } | `
+                kubectl replace --raw "/api/v1/namespaces/$ns/finalize" -f - 2>&1 | Out-Null
+        }
+    }
+}
+
+function Remove-OrphanedALB {
+    param([string]$Region)
+    
+    Write-Log "Orphaned ALB (k8s-lionpay-*) 확인 및 삭제 ($Region)..." "INFO"
+
+    # 1. Load Balancer 삭제
+    $lbs = aws elbv2 describe-load-balancers --region $Region --query "LoadBalancers[?contains(LoadBalancerName, 'k8s-lionpay')].LoadBalancerArn" --output text --no-cli-pager 2>&1
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($lbs) -and $lbs -ne "None") {
+        $lbArns = $lbs -split "\s+"
+        foreach ($arn in $lbArns) {
+            Write-Log "ALB 삭제: $arn" "INFO"
+            aws elbv2 delete-load-balancer --load-balancer-arn $arn --region $Region --no-cli-pager 2>&1 | Out-Null
+        }
+        Write-Log "ALB 삭제 완료 대기 (10초)..." "INFO"
+        Start-Sleep -Seconds 10
+    }
+
+    # 2. Target Group 삭제
+    Write-Log "Orphaned Target Group (k8s-lionpay-*) 확인 및 삭제..." "INFO"
+    $tgs = aws elbv2 describe-target-groups --region $Region --query "TargetGroups[?contains(TargetGroupName, 'k8s-lionpay')].TargetGroupArn" --output text --no-cli-pager 2>&1
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($tgs) -and $tgs -ne "None") {
+        $tgArns = $tgs -split "\s+"
+        foreach ($arn in $tgArns) {
+            Write-Log "Target Group 삭제: $arn" "INFO"
+            aws elbv2 delete-target-group --target-group-arn $arn --region $Region --no-cli-pager 2>&1 | Out-Null
+        }
+    }
+
+    # 3. Security Group 삭제 (Load Balancer 관련)
+    Write-Log "Ingress 관련 Security Group 확인 및 삭제..." "INFO"
+    # k8s-lionpay와 backend-sg 태그가 있는 SG 검색
+    $sgs = aws ec2 describe-security-groups --region $Region --filters "Name=tag-key,Values=elbv2.k8s.aws/cluster" --query "SecurityGroups[].GroupId" --output text --no-cli-pager 2>&1
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($sgs) -and $sgs -ne "None") {
+        $sgIds = $sgs -split "\s+"
+        foreach ($id in $sgIds) {
+            Write-Log "Security Group 삭제 시도: $id" "INFO"
+            aws ec2 delete-security-group --group-id $id --region $Region --no-cli-pager 2>&1 | Out-Null
+        }
+    }
+}
+
 function Remove-LoadBalancers {
     param([string]$ClusterName, [string]$Region)
 
@@ -249,6 +309,7 @@ Write-Log "Phase 1: Seoul 클러스터 Kubernetes 리소스 정리" "PHASE"
 if (Test-ClusterExists -ClusterName $SeoulCluster -Region $SeoulRegion) {
     Remove-KarpenterResources -ClusterName $SeoulCluster -Region $SeoulRegion
     Remove-LoadBalancers -ClusterName $SeoulCluster -Region $SeoulRegion
+    Force-RemoveFinalizers -ClusterName $SeoulCluster -Region $SeoulRegion
 }
 else {
     Write-Log "Seoul 클러스터가 존재하지 않음. 스킵." "INFO"
@@ -263,6 +324,7 @@ Write-Log "Phase 2: Tokyo 클러스터 Kubernetes 리소스 정리" "PHASE"
 if (Test-ClusterExists -ClusterName $TokyoCluster -Region $TokyoRegion) {
     Remove-KarpenterResources -ClusterName $TokyoCluster -Region $TokyoRegion
     Remove-LoadBalancers -ClusterName $TokyoCluster -Region $TokyoRegion
+    Force-RemoveFinalizers -ClusterName $TokyoCluster -Region $TokyoRegion
 }
 else {
     Write-Log "Tokyo 클러스터가 존재하지 않음. 스킵." "INFO"
@@ -274,6 +336,8 @@ else {
 
 Write-Log "Phase 3: Orphaned AWS 리소스 정리" "PHASE"
 
+Remove-OrphanedALB -Region $SeoulRegion
+Remove-OrphanedALB -Region $TokyoRegion
 Remove-OrphanedResources -Region $SeoulRegion
 Remove-OrphanedResources -Region $TokyoRegion
 
