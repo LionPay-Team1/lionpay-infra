@@ -69,3 +69,50 @@ aws ec2 describe-network-interfaces --filters "Name=vpc-id,Values=<VPC_ID>" --qu
 terraform state rm <resource_address>
 terraform destroy -var-file="<env>.tfvars" -auto-approve
 ```
+
+### IAM 시간 기반 Deny 정책으로 중단된 경우
+
+`Cloud4-ProjectTimeDeny`와 같은 정책으로 인해 특정 시간대(예: 18:00 이후)에 AWS 작업이 차단될 수 있습니다.
+
+**증상:**
+- `explicit deny in an identity-based policy` 오류 발생
+- S3, EC2, DynamoDB 등 거의 모든 AWS 작업 실패
+
+**해결 방법:**
+1. 허용된 시간대(예: 다음 날 오전)에 다시 실행
+2. `errored.tfstate` 파일이 생성된 경우 아래 복구 절차 수행
+
+### errored.tfstate 복구
+
+Terraform이 리소스 삭제 중 상태 저장에 실패하면 로컬에 `errored.tfstate` 파일이 생성됩니다.
+
+```bash
+cd terraform/main
+
+# 1. 워크스페이스 선택
+terraform workspace select <env>
+
+# 2. 로컬 상태 파일을 원격으로 푸시
+terraform state push errored.tfstate
+
+# 3. 남은 리소스 삭제 재시도
+terraform destroy -var-file="<env>.tfvars" -auto-approve
+
+# 4. 성공 시 로컬 errored.tfstate 삭제
+rm errored.tfstate
+```
+
+### Karpenter 리소스 수동 정리
+
+스크립트가 Karpenter 리소스 삭제에 실패한 경우:
+
+```bash
+# kubeconfig 업데이트
+aws eks update-kubeconfig --name <cluster-name> --region <region> --no-cli-pager
+
+# Finalizer 강제 제거 후 삭제
+kubectl get ec2nodeclasses -o name | xargs -I {} kubectl patch {} --type merge -p '{"metadata":{"finalizers":null}}'
+kubectl get nodeclaims -o name | xargs -I {} kubectl patch {} --type merge -p '{"metadata":{"finalizers":null}}'
+kubectl get nodepools -o name | xargs -I {} kubectl patch {} --type merge -p '{"metadata":{"finalizers":null}}'
+```
+

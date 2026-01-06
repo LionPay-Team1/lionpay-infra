@@ -100,15 +100,39 @@ function Remove-KarpenterResources {
     Write-Log "Karpenter NodePool 삭제 중..." "INFO"
     kubectl delete nodepools --all --ignore-not-found=true 2>&1 | Out-Null
 
-    Write-Log "Karpenter EC2NodeClass 삭제 중..." "INFO"
-    kubectl delete ec2nodeclasses --all --ignore-not-found=true 2>&1 | Out-Null
+    Write-Log "Karpenter EC2NodeClass 삭제 요청 중..." "INFO"
+    kubectl delete ec2nodeclasses --all --ignore-not-found=true --wait=false 2>&1 | Out-Null
 
-    Write-Log "NodeClaim 정리 대기 중 (최대 120초)..." "INFO"
-    $timeout = 120
+    # EC2NodeClass finalizer 강제 제거 (삭제가 막힌 경우)
+    Write-Log "EC2NodeClass finalizer 정리 중..." "INFO"
+    $ec2NodeClasses = kubectl get ec2nodeclasses -o name 2>&1
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($ec2NodeClasses) -and $ec2NodeClasses -notmatch "No resources found") {
+        $ec2NodeClasses -split "`n" | ForEach-Object {
+            if (-not [string]::IsNullOrWhiteSpace($_)) {
+                kubectl patch $_ --type merge -p '{"metadata":{"finalizers":null}}' 2>&1 | Out-Null
+            }
+        }
+        Write-Log "EC2NodeClass finalizer 제거 완료" "SUCCESS"
+    }
+
+    # NodeClaim finalizer 강제 제거
+    Write-Log "NodeClaim finalizer 정리 중..." "INFO"
+    $nodeclaims = kubectl get nodeclaims -o name 2>&1
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($nodeclaims) -and $nodeclaims -notmatch "No resources found") {
+        $nodeclaims -split "`n" | ForEach-Object {
+            if (-not [string]::IsNullOrWhiteSpace($_)) {
+                kubectl patch $_ --type merge -p '{"metadata":{"finalizers":null}}' 2>&1 | Out-Null
+            }
+        }
+        Write-Log "NodeClaim finalizer 제거 완료" "SUCCESS"
+    }
+
+    Write-Log "NodeClaim 정리 대기 중 (최대 60초)..." "INFO"
+    $timeout = 60
     $elapsed = 0
     while ($elapsed -lt $timeout) {
-        $nodeclaims = kubectl get nodeclaims --no-headers 2>&1
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($nodeclaims) -or $nodeclaims -match "No resources found") {
+        $remainingNodeclaims = kubectl get nodeclaims --no-headers 2>&1
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($remainingNodeclaims) -or $remainingNodeclaims -match "No resources found") {
             Write-Log "모든 NodeClaim 삭제 완료" "SUCCESS"
             return $true
         }
@@ -116,7 +140,7 @@ function Remove-KarpenterResources {
         $elapsed += 10
         Write-Log "NodeClaim 삭제 대기 중... ($elapsed/$timeout 초)" "INFO"
     }
-    Write-Log "NodeClaim 삭제 타임아웃" "WARN"
+    Write-Log "NodeClaim 삭제 타임아웃 - 일부 리소스가 남아있을 수 있음" "WARN"
     return $true
 }
 
