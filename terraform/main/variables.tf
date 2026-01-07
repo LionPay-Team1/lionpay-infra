@@ -133,9 +133,6 @@ variable "dynamodb_table_name" {
 # S3 Variables
 ###############################################################
 
-variable "s3_bucket_name" {
-  type = string
-}
 
 ###############################################################
 # Grafana Cloud Variables

@@ -59,9 +59,9 @@ output "dynamodb_table_arn" {
 # S3 Outputs
 ###############################################################
 
-output "s3_bucket_name" {
-  description = "S3 bucket name"
-  value       = module.s3.bucket_name
+output "frontend_s3_bucket_name" {
+  description = "Frontend S3 bucket name"
+  value       = module.frontend_s3.bucket_name
 }
 
 ###############################################################
@@ -111,4 +111,3 @@ output "argocd_server_url" {
   description = "ArgoCD server URL (available after capability is created)"
   value       = try(aws_eks_capability.argocd_seoul.configuration[0].argo_cd[0].server_url, null)
 }
-
