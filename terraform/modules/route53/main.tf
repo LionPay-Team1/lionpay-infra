@@ -3,7 +3,7 @@
 ###############################################################
 
 resource "aws_route53_zone" "lionpay" {
-  name = var.zone_name
+  name    = var.zone_name
   comment = ""
 
   lifecycle {
@@ -21,7 +21,7 @@ resource "aws_route53_record" "lionpay_apex_a" {
   }
 
   alias {
-    name                   = "d1offmun0zt2o7.cloudfront.net."
+    name                   = "${var.app_cloudfront_domain_name}."
     zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
   }
@@ -82,7 +82,7 @@ resource "aws_route53_record" "admin_a" {
   }
 
   alias {
-    name                   = "d16srywbso6fsa.cloudfront.net."
+    name                   = "${var.admin_cloudfront_domain_name}."
     zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
   }
@@ -112,7 +112,7 @@ resource "aws_route53_record" "api_a" {
   }
 
   alias {
-    name                   = "d20x9f76m12qrg.cloudfront.net."
+    name                   = "${var.api_cloudfront_domain_name}."
     zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
   }
@@ -132,46 +132,8 @@ resource "aws_route53_record" "acm_validation_api" {
   }
 }
 
-resource "aws_route53_record" "origin_api_latency_seoul" {
-  zone_id = aws_route53_zone.lionpay.zone_id
-  name    = "origin-api.${var.zone_name}"
-  type    = "A"
-
-  lifecycle {
-    prevent_destroy = true
-  }
-
-  set_identifier = "lionpay-latency-seoul"
-
-  latency_routing_policy {
-    region = "ap-northeast-2"
-  }
-
-  alias {
-    name                   = "dualstack.k8s-lionpay-lionpayi-9404506445-1666136931.ap-northeast-2.elb.amazonaws.com."
-    zone_id                = "ZWKZPGTI48KDX"
-    evaluate_target_health = true
-  }
-}
-
-resource "aws_route53_record" "origin_api_latency_tokyo" {
-  zone_id = aws_route53_zone.lionpay.zone_id
-  name    = "origin-api.${var.zone_name}"
-  type    = "A"
-
-  lifecycle {
-    prevent_destroy = true
-  }
-
-  set_identifier = "lionpay-latency-tokyo"
-
-  latency_routing_policy {
-    region = "ap-northeast-1"
-  }
-
-  alias {
-    name                   = "dualstack.k8s-lionpay-lionpayi-af1c73a882-1629284442.ap-northeast-1.elb.amazonaws.com."
-    zone_id                = "Z14GRHDCWA56QT"
-    evaluate_target_health = true
-  }
-}
+###############################################################
+# origin-api Latency Routing Records
+# NOTE: These records are managed by scripts/update-route53-alb.ps1
+# after ArgoCD deploys the Ingress and ALB is created.
+###############################################################

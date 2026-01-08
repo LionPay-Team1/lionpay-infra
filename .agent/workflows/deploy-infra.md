@@ -103,3 +103,21 @@ gh workflow run deploy-management.yml
 
 > [!CAUTION]
 > **Environment Variables**: Before triggering frontend deployments, ensure that the environment variables (e.g., `.env.production` or GitHub repository secrets) in the `lionpay` repository are correctly configured to match the newly deployed infrastructure (API endpoints, User Pool IDs, etc.).
+
+### 9. Update Route53 ALB Records
+After ArgoCD deploys the Ingress resources and ALBs are created, update Route53 latency routing records.
+
+> [!NOTE]
+> This step should be run after the Kubernetes Ingress is deployed and ALB is provisioned. 
+> Skip this step if the ALB records are already up to date.
+
+// turbo
+```powershell
+./scripts/update-route53-alb.ps1
+```
+
+Verify the update:
+```bash
+aws route53 list-resource-record-sets --hosted-zone-id $(aws route53 list-hosted-zones-by-name --dns-name lionpay.shop --query "HostedZones[0].Id" --output text --no-cli-pager | sed 's|/hostedzone/||') --query "ResourceRecordSets[?Name=='origin-api.lionpay.shop.']" --no-cli-pager
+```
+

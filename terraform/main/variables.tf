@@ -216,6 +216,12 @@ variable "jwt_secret" {
 # Route53 Variables
 ###############################################################
 
+variable "route53_zone_name" {
+  description = "Route53 hosted zone name."
+  type        = string
+  default     = "lionpay.shop"
+}
+
 variable "route53_zone_id" {
   description = "Route53 hosted zone ID for lionpay.shop."
   type        = string
