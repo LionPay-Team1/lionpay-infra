@@ -77,7 +77,7 @@ resource "aws_cloudfront_distribution" "app" {
   }
 
   ordered_cache_behavior {
-    path_pattern           = "/api/*"
+    path_pattern           = "/v1/*"
     target_origin_id       = local.origin_ids.app_api
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = local.allowed_methods_all
@@ -221,7 +221,7 @@ resource "aws_cloudfront_distribution" "api" {
   }
 
   ordered_cache_behavior {
-    path_pattern           = "/api/*"
+    path_pattern           = "/v1/*"
     target_origin_id       = local.origin_ids.api_api
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = local.allowed_methods_all
