@@ -3,6 +3,10 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: auth-hpa
 spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: auth-deployment
   minReplicas: 2
   maxReplicas: 100
 ---
@@ -11,5 +15,9 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: wallet-hpa
 spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: wallet-deployment
   minReplicas: 2
   maxReplicas: 100

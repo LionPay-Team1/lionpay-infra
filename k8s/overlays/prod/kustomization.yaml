@@ -8,9 +8,9 @@ resources:
 
 images:
   - name: 727646470302.dkr.ecr.ap-northeast-2.amazonaws.com/lionpay-auth
-    newTag: "latest"
+    newTag: "release"
   - name: 727646470302.dkr.ecr.ap-northeast-2.amazonaws.com/lionpay-wallet
-    newTag: "latest"
+    newTag: "release"
 
 commonLabels:
   environment: prod
