@@ -9,51 +9,37 @@ metadata:
     # HTTP only - CloudFront handles HTTPS
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/backend-protocol: HTTP
-    alb.ingress.kubernetes.io/actions.wallet-rewrite: >
-      {"Type":"redirect","RedirectConfig":{"Path":"/health","Query":"#{query}","StatusCode":"HTTP_301"}}
 spec:
   rules:
     - http:
         paths:
-          - path: /api/v1/auth
+          # Auth Service
+          - path: /v1/auth
             pathType: Prefix
             backend:
               service:
                 name: auth-service
                 port:
                   number: 8080
-          - path: /api/v1/users
+          - path: /v1/users
             pathType: Prefix
             backend:
               service:
                 name: auth-service
                 port:
                   number: 8080
-          - path: /api/v1/admin
+          - path: /v1/admin
             pathType: Prefix
             backend:
               service:
                 name: auth-service
                 port:
                   number: 8080
-          - path: /api/v1/wallet/health
-            pathType: Exact
-            backend:
-              service:
-                name: wallet-rewrite
-                port:
-                  name: use-annotation
-          - path: /api/v1/wallet
+          # Wallet Service
+          - path: /v1/wallet
             pathType: Prefix
             backend:
               service:
                 name: wallet-service
                 port:
-                  number: 8081
-          - path: /health
-            pathType: Exact
-            backend:
-              service:
-                name: wallet-service
-                port:
-                  number: 8081
+                  number: 8080
