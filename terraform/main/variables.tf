@@ -49,6 +49,18 @@ variable "argocd_admin_group_id" {
   type        = string
 }
 
+variable "git_repo_url" {
+  description = "Git repository URL for ArgoCD applications"
+  type        = string
+  default     = "https://github.com/LionPay-Team1/lionpay-infra"
+}
+
+variable "git_repo_revision" {
+  description = "Git repository revision (branch, tag, or commit) to use for ArgoCD applications"
+  type        = string
+  default     = "main"
+}
+
 ###############################################################
 # VPC Variables - Seoul (Hub)
 ###############################################################
