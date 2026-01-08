@@ -111,3 +111,37 @@ output "argocd_server_url" {
   description = "ArgoCD server URL (available after capability is created)"
   value       = try(aws_eks_capability.argocd_seoul.configuration[0].argo_cd[0].server_url, null)
 }
+
+###############################################################
+# CloudFront Outputs
+###############################################################
+
+output "cloudfront_app_distribution_id" {
+  description = "CloudFront distribution ID for lionpay.shop."
+  value       = module.cloudfront.app_distribution_id
+}
+
+output "cloudfront_app_distribution_domain_name" {
+  description = "CloudFront distribution domain for lionpay.shop."
+  value       = module.cloudfront.app_distribution_domain_name
+}
+
+output "cloudfront_admin_distribution_id" {
+  description = "CloudFront distribution ID for admin.lionpay.shop."
+  value       = module.cloudfront.admin_distribution_id
+}
+
+output "cloudfront_admin_distribution_domain_name" {
+  description = "CloudFront distribution domain for admin.lionpay.shop."
+  value       = module.cloudfront.admin_distribution_domain_name
+}
+
+output "cloudfront_api_distribution_id" {
+  description = "CloudFront distribution ID for api.lionpay.shop."
+  value       = module.cloudfront.api_distribution_id
+}
+
+output "cloudfront_api_distribution_domain_name" {
+  description = "CloudFront distribution domain for api.lionpay.shop."
+  value       = module.cloudfront.api_distribution_domain_name
+}
