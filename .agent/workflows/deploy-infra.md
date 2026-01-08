@@ -24,12 +24,21 @@ aws eks list-clusters --query "clusters" --no-cli-pager
 aws dsql list-clusters --region ap-northeast-2 --query "clusters[*].identifier" --no-cli-pager
 ```
 
-### 2. Terraform Apply
-If infrastructure is missing or you want to ensure it's up to date:
+### 2. Terraform Plan & Apply
+Always run `plan` first. Skip `apply` if there are no infrastructure changes.
+
+#### Plan
+```powershell
+./terraform/terraform.ps1 plan -Env dev
+```
+
+#### Apply
+Run this ONLY if the plan output shows "Plan: X to add, Y to change, Z to destroy" and you confirm the changes. If it says "No changes. Your infrastructure matches the configuration.", **skip this step.**
 // turbo
 ```powershell
 ./terraform/terraform.ps1 apply -Env dev -Auto
 ```
+
 
 ### 3. Check DSQL Peering Status
 Check if the DSQL clusters are already peered.
@@ -65,3 +74,32 @@ export DSQL_ENDPOINT=$(terraform -chdir=terraform/main output -raw dsql_seoul_id
 cd <LIONPAY_PATH>
 ./migrate-walletdb.ps1 -endpoint "$DSQL_ENDPOINT" -region "ap-northeast-2"
 ```
+
+### 7. Update CloudFront Secrets
+Check if secrets in the `lionpay` repository are already up to date before setting them.
+
+```bash
+# Get Distribution IDs
+export DIST_APP_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Aliases.Items, 'lionpay.shop')].Id" --output text --no-cli-pager)
+export DIST_MGMT_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Aliases.Items, 'admin.lionpay.shop')].Id" --output text --no-cli-pager)
+
+cd <LIONPAY_PATH>
+# Optional: Verify current secret values if possible, otherwise run set (it's safe to overwrite if needed)
+gh secret set DIST_APP_ID_DEV --body "$DIST_APP_ID"
+gh secret set DIST_MANAGEMENT_ID_DEV --body "$DIST_MGMT_ID"
+```
+
+### 8. Trigger Frontend Deployments
+Only trigger if deployment is necessary (e.g., first time or after infrastructure changes).
+
+```bash
+cd <LIONPAY_PATH>
+# Check if S3 bucket is empty (optional)
+# aws s3 ls s3://lionpay-dev-frontend
+
+gh workflow run deploy-app.yml
+gh workflow run deploy-management.yml
+```
+
+> [!CAUTION]
+> **Environment Variables**: Before triggering frontend deployments, ensure that the environment variables (e.g., `.env.production` or GitHub repository secrets) in the `lionpay` repository are correctly configured to match the newly deployed infrastructure (API endpoints, User Pool IDs, etc.).
