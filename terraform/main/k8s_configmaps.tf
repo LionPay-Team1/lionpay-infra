@@ -40,6 +40,7 @@ resource "kubernetes_config_map_v1" "wallet_config_seoul" {
     "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
     "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
     "OTEL_SERVICE_NAME"           = "wallet"
+    "Dsql__Region"                = "ap-northeast-2"
   }
 
   depends_on = [module.eks_seoul]
@@ -83,6 +84,7 @@ resource "kubernetes_config_map_v1" "wallet_config_tokyo" {
     "OTEL_EXPORTER_OTLP_ENDPOINT" = var.otel_exporter_otlp_endpoint
     "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
     "OTEL_SERVICE_NAME"           = "wallet"
+    "Dsql__Region"                = "ap-northeast-1"
   }
 
   depends_on = [module.eks_tokyo]
