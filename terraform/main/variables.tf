@@ -212,3 +212,134 @@ variable "jwt_secret" {
   sensitive   = true
 }
 
+###############################################################
+# Route53 Variables
+###############################################################
+
+variable "route53_zone_id" {
+  description = "Route53 hosted zone ID for lionpay.shop."
+  type        = string
+}
+
+###############################################################
+# CloudFront Variables
+###############################################################
+
+variable "cloudfront_frontend_bucket_name" {
+  description = "Frontend S3 bucket name."
+  type        = string
+  default     = "lionpay-dev-frontend"
+}
+
+variable "cloudfront_app_backend_origin_domain_name" {
+  description = "Origin DNS name for lionpay.shop /api/* backend."
+  type        = string
+}
+
+variable "cloudfront_api_origin_domain_name" {
+  description = "Origin DNS name for api.lionpay.shop (ALB)."
+  type        = string
+}
+
+variable "cloudfront_api_default_root_object" {
+  description = "Optional default root object for api.lionpay.shop."
+  type        = string
+  default     = null
+}
+
+variable "cloudfront_app_s3_origin_id_override" {
+  description = "Optional override for app S3 origin_id."
+  type        = string
+  default     = null
+}
+
+variable "cloudfront_admin_s3_origin_id_override" {
+  description = "Optional override for admin S3 origin_id."
+  type        = string
+  default     = null
+}
+
+variable "cloudfront_app_backend_origin_id_override" {
+  description = "Optional override for app /api/* origin_id."
+  type        = string
+  default     = null
+}
+
+variable "cloudfront_api_default_origin_id_override" {
+  description = "Optional override for api default origin_id."
+  type        = string
+  default     = null
+}
+
+variable "cloudfront_api_ordered_origin_id_override" {
+  description = "Optional override for api /api/* origin_id."
+  type        = string
+  default     = null
+}
+
+variable "cloudfront_oac_name" {
+  description = "Origin Access Control name."
+  type        = string
+}
+
+variable "cloudfront_oac_description" {
+  description = "Origin Access Control description."
+  type        = string
+}
+
+variable "cloudfront_price_class" {
+  description = "CloudFront price class."
+  type        = string
+  default     = "PriceClass_All"
+}
+
+variable "cloudfront_app_tags" {
+  description = "Tags to apply to lionpay.shop distribution."
+  type        = map(string)
+  default     = {}
+}
+
+variable "cloudfront_admin_tags" {
+  description = "Tags to apply to admin.lionpay.shop distribution."
+  type        = map(string)
+  default     = {}
+}
+
+variable "cloudfront_api_tags" {
+  description = "Tags to apply to api.lionpay.shop distribution."
+  type        = map(string)
+  default     = {}
+}
+
+variable "cloudfront_app_web_acl_id" {
+  description = "Optional WAF Web ACL ARN for lionpay.shop."
+  type        = string
+  default     = null
+}
+
+variable "cloudfront_admin_web_acl_id" {
+  description = "Optional WAF Web ACL ARN for admin.lionpay.shop."
+  type        = string
+  default     = null
+}
+
+variable "cloudfront_api_web_acl_id" {
+  description = "Optional WAF Web ACL ARN for api.lionpay.shop."
+  type        = string
+  default     = null
+}
+
+variable "cloudfront_api_acm_arn" {
+  description = "ACM certificate ARN for api.lionpay.shop (us-east-1)."
+  type        = string
+}
+
+variable "cloudfront_app_acm_arn" {
+  description = "ACM certificate ARN for lionpay.shop (us-east-1)."
+  type        = string
+}
+
+variable "cloudfront_admin_acm_arn" {
+  description = "ACM certificate ARN for admin.lionpay.shop (us-east-1)."
+  type        = string
+}
