@@ -3,13 +3,13 @@ kind: Service
 metadata:
   name: wallet-service
   annotations:
-    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-path: /v1/wallet/health
     alb.ingress.kubernetes.io/success-codes: "200"
 spec:
   selector:
     app: wallet
   ports:
     - protocol: TCP
-      port: 8081
+      port: 8080
       targetPort: 8080
   type: ClusterIP

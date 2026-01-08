@@ -238,7 +238,7 @@ variable "cloudfront_frontend_bucket_name" {
 }
 
 variable "cloudfront_app_backend_origin_domain_name" {
-  description = "Origin DNS name for lionpay.shop /api/* backend."
+  description = "Origin DNS name for lionpay.shop /v1/* backend."
   type        = string
 }
 
@@ -266,7 +266,7 @@ variable "cloudfront_admin_s3_origin_id_override" {
 }
 
 variable "cloudfront_app_backend_origin_id_override" {
-  description = "Optional override for app /api/* origin_id."
+  description = "Optional override for app /v1/* origin_id."
   type        = string
   default     = null
 }
@@ -278,7 +278,7 @@ variable "cloudfront_api_default_origin_id_override" {
 }
 
 variable "cloudfront_api_ordered_origin_id_override" {
-  description = "Optional override for api /api/* origin_id."
+  description = "Optional override for api /v1/* origin_id."
   type        = string
   default     = null
 }

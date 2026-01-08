@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: auth-service
   annotations:
-    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    alb.ingress.kubernetes.io/healthcheck-path: /v1/auth/health
     alb.ingress.kubernetes.io/success-codes: "200"
 spec:
   selector:

@@ -55,8 +55,8 @@ kubernetes/
 │  │  ┌────────▼────────────────────▼────────┐  │  │
 │  │  │      ALB Ingress (HTTP)              │  │  │
 │  │  │  Routes:                             │  │  │
-│  │  │  - /api/v1/auth → auth-service      │  │  │
-│  │  │  - /api/v1/wallet → wallet-service  │  │  │
+│  │  │  - /v1/auth → auth-service          │  │  │
+│  │  │  - /v1/wallet → wallet-service      │  │  │
 │  │  └────────┬─────────────────────────────┘  │  │
 │  │           │                                 │  │
 │  └───────────┼─────────────────────────────────┘  │
@@ -88,7 +88,7 @@ kubernetes/
 ### 🔍 상태 모니터링
 - **Liveness Probe**: 서비스 정상 여부 자동 감지
 - **Readiness Probe**: 트래픽 수신 준비 상태 확인
-- **Health Check Endpoints**: `/api/v1/auth/health`, `/api/v1/wallet/health`
+- **Health Check Endpoints**: `/v1/auth/health`, `/v1/wallet/health`
 
 ### 🔒 보안 & CORS
 - CloudFront가 HTTPS 처리 (ALB는 HTTP only)
@@ -218,7 +218,7 @@ kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controll
 ### CORS 오류
 ```bash
 # CORS 헤더 확인
-curl -v https://api.lionpay.shop/api/v1/auth/health
+curl -v https://api.lionpay.shop/v1/auth/health
 ```
 
 더 자세한 내용은 **DEPLOYMENT_GUIDE.md** 의 "트러블슈팅" 섹션 참조.

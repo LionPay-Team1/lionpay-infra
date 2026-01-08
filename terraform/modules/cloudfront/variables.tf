@@ -20,7 +20,7 @@ variable "api_domain_name" {
 
 variable "app_backend_origin_domain_name" {
   type        = string
-  description = "Origin DNS name for the app /api/* backend (ALB DNS)."
+  description = "Origin DNS name for the app /v1/* backend (ALB DNS)."
 }
 
 variable "api_origin_domain_name" {
@@ -109,7 +109,7 @@ variable "admin_s3_origin_id_override" {
 
 variable "app_backend_origin_id_override" {
   type        = string
-  description = "Optional override for app /api/* origin_id to match existing console values."
+  description = "Optional override for app /v1/* origin_id to match existing console values."
   default     = null
 }
 
@@ -121,7 +121,7 @@ variable "api_default_origin_id_override" {
 
 variable "api_ordered_origin_id_override" {
   type        = string
-  description = "Optional override for api /api/* origin_id to match existing console values."
+  description = "Optional override for api /v1/* origin_id to match existing console values."
   default     = null
 }
 
