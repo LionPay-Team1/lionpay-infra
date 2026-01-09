@@ -1,6 +1,16 @@
-variable "s3_bucket_name" {
+variable "s3_bucket_id" {
   type        = string
-  description = "S3 bucket name for frontend assets."
+  description = "S3 bucket ID for frontend assets."
+}
+
+variable "s3_bucket_arn" {
+  type        = string
+  description = "S3 bucket ARN for frontend assets."
+}
+
+variable "s3_bucket_regional_domain_name" {
+  type        = string
+  description = "S3 bucket regional domain name for frontend assets."
 }
 
 variable "app_domain_name" {
@@ -18,10 +28,7 @@ variable "api_domain_name" {
   description = "Custom domain for api.lionpay.shop distribution."
 }
 
-variable "app_backend_origin_domain_name" {
-  type        = string
-  description = "Origin DNS name for the app /v1/* backend (ALB DNS)."
-}
+
 
 variable "api_origin_domain_name" {
   type        = string
@@ -107,11 +114,7 @@ variable "admin_s3_origin_id_override" {
   default     = null
 }
 
-variable "app_backend_origin_id_override" {
-  type        = string
-  description = "Optional override for app /v1/* origin_id to match existing console values."
-  default     = null
-}
+
 
 variable "api_default_origin_id_override" {
   type        = string

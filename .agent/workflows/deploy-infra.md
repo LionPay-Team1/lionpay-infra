@@ -29,14 +29,14 @@ Always run `plan` first. Skip `apply` if there are no infrastructure changes.
 
 #### Plan
 ```powershell
-./terraform/terraform.ps1 plan -Env dev
+./scripts/terraform.ps1 plan -Env dev
 ```
 
 #### Apply
 Run this ONLY if the plan output shows "Plan: X to add, Y to change, Z to destroy" and you confirm the changes. If it says "No changes. Your infrastructure matches the configuration.", **skip this step.**
 // turbo
 ```powershell
-./terraform/terraform.ps1 apply -Env dev -Auto
+./scripts/terraform.ps1 apply -Env dev -Auto
 ```
 
 
@@ -55,7 +55,7 @@ aws dsql get-cluster --identifier $(terraform -chdir=terraform/main output -raw 
 If the clusters are not peered (multiRegionProperties is empty or incomplete):
 // turbo
 ```powershell
-./terraform/dsql-peering.ps1 -Cluster1Arn "$CLUSTER1_ARN" -Cluster2Arn "$CLUSTER2_ARN" -WitnessRegion "ap-northeast-3"
+./scripts/dsql-peering.ps1 -Cluster1Arn "$CLUSTER1_ARN" -Cluster2Arn "$CLUSTER2_ARN" -WitnessRegion "ap-northeast-3"
 ```
 
 ### 5. Get LionPay Path
@@ -72,7 +72,7 @@ export DSQL_ENDPOINT=$(terraform -chdir=terraform/main output -raw dsql_seoul_id
 # Run migration script in lionpay directory
 # Replace <LIONPAY_PATH> with the path provided by the user
 cd <LIONPAY_PATH>
-./migrate-walletdb.ps1 -endpoint "$DSQL_ENDPOINT" -region "ap-northeast-2"
+./migrate-walletdb.ps1 -e "$DSQL_ENDPOINT" -r "ap-northeast-2"
 ```
 
 ### 7. Update CloudFront Secrets
@@ -120,4 +120,3 @@ Verify the update:
 ```bash
 aws route53 list-resource-record-sets --hosted-zone-id $(aws route53 list-hosted-zones-by-name --dns-name lionpay.shop --query "HostedZones[0].Id" --output text --no-cli-pager | sed 's|/hostedzone/||') --query "ResourceRecordSets[?Name=='origin-api.lionpay.shop.']" --no-cli-pager
 ```
-

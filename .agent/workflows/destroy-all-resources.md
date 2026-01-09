@@ -27,7 +27,7 @@ description: Destroy all infrastructure resources
 
 // turbo
 ```powershell
-cd terraform && ./destroy-all.ps1 -Env dev -Auto
+./scripts/destroy-all.ps1 -Env dev -Auto
 ```
 
 ## Script Phases

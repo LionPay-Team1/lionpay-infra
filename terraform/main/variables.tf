@@ -217,14 +217,9 @@ variable "jwt_secret" {
 ###############################################################
 
 variable "route53_zone_name" {
-  description = "Route53 hosted zone name."
+  description = "Route53 hosted zone name (externally managed)."
   type        = string
   default     = "lionpay.shop"
-}
-
-variable "route53_zone_id" {
-  description = "Route53 hosted zone ID for lionpay.shop."
-  type        = string
 }
 
 ###############################################################
@@ -237,18 +232,8 @@ variable "cloudfront_frontend_bucket_name" {
   default     = "lionpay-dev-frontend"
 }
 
-variable "cloudfront_app_backend_origin_domain_name" {
-  description = "Origin DNS name for lionpay.shop /v1/* backend."
-  type        = string
-}
-
-variable "cloudfront_api_origin_domain_name" {
-  description = "Origin DNS name for api.lionpay.shop (ALB)."
-  type        = string
-}
-
 variable "cloudfront_api_default_root_object" {
-  description = "Optional default root object for api.lionpay.shop."
+  description = "Optional default root object for api domain."
   type        = string
   default     = null
 }
@@ -300,52 +285,30 @@ variable "cloudfront_price_class" {
 }
 
 variable "cloudfront_app_tags" {
-  description = "Tags to apply to lionpay.shop distribution."
+  description = "Tags to apply to app distribution."
   type        = map(string)
   default     = {}
 }
 
 variable "cloudfront_admin_tags" {
-  description = "Tags to apply to admin.lionpay.shop distribution."
+  description = "Tags to apply to admin distribution."
   type        = map(string)
   default     = {}
 }
 
 variable "cloudfront_api_tags" {
-  description = "Tags to apply to api.lionpay.shop distribution."
+  description = "Tags to apply to api distribution."
   type        = map(string)
   default     = {}
 }
 
-variable "cloudfront_app_web_acl_id" {
-  description = "Optional WAF Web ACL ARN for lionpay.shop."
-  type        = string
-  default     = null
+variable "enable_waf" {
+  description = "Enable WAF Web ACL for CloudFront distributions"
+  type        = bool
+  default     = false
 }
 
-variable "cloudfront_admin_web_acl_id" {
-  description = "Optional WAF Web ACL ARN for admin.lionpay.shop."
-  type        = string
-  default     = null
-}
-
-variable "cloudfront_api_web_acl_id" {
-  description = "Optional WAF Web ACL ARN for api.lionpay.shop."
-  type        = string
-  default     = null
-}
-
-variable "cloudfront_api_acm_arn" {
-  description = "ACM certificate ARN for api.lionpay.shop (us-east-1)."
-  type        = string
-}
-
-variable "cloudfront_app_acm_arn" {
-  description = "ACM certificate ARN for lionpay.shop (us-east-1)."
-  type        = string
-}
-
-variable "cloudfront_admin_acm_arn" {
-  description = "ACM certificate ARN for admin.lionpay.shop (us-east-1)."
+variable "cloudfront_acm_arn" {
+  description = "ACM wildcard certificate ARN (us-east-1). Dev: *.dev.lionpay.shop, Prod: *.lionpay.shop"
   type        = string
 }

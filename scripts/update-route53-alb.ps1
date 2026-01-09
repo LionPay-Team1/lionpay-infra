@@ -48,7 +48,7 @@ function Get-ALBDnsFromIngress {
     Write-Host "Getting ALB DNS from $ClusterName in $Region..." -ForegroundColor Cyan
     
     # Update kubeconfig
-    aws eks update-kubeconfig --name $ClusterName --region $Region --no-cli-pager 2>$null
+    aws eks update-kubeconfig --name $ClusterName --region $Region --no-cli-pager > $null
     
     # Get Ingress and extract ALB hostname
     $ingress = kubectl get ingress $IngressName -n $Namespace -o json 2>$null | ConvertFrom-Json
