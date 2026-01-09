@@ -12,7 +12,7 @@ param (
     [switch]$Auto
 )
 
-Push-Location "$PSScriptRoot\main"
+Push-Location "$PSScriptRoot/main"
 [Console]::ResetColor()
 
 try {
