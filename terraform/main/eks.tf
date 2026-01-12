@@ -334,3 +334,89 @@ module "monitoring_tokyo" {
   fleetmanagement_username = var.fleetmanagement_username
   fleetmanagement_password = var.fleetmanagement_password
 }
+
+###############################################################
+# AWS Load Balancer Controller - Seoul (Hub) & Tokyo (Spoke)
+###############################################################
+
+resource "helm_release" "aws_load_balancer_controller_seoul" {
+  provider   = helm.seoul
+  name       = "aws-load-balancer-controller"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+  version    = "1.7.1"
+
+  set {
+    name  = "clusterName"
+    value = module.eks_seoul.cluster_name
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.eks_seoul.load_balancer_controller_iam_role_arn
+  }
+
+  set {
+    name  = "vpcId"
+    value = module.vpc_seoul.vpc_id
+  }
+
+  set {
+    name  = "awsRegion"
+    value = "ap-northeast-2"
+  }
+
+  depends_on = [module.eks_seoul]
+}
+
+resource "helm_release" "aws_load_balancer_controller_tokyo" {
+  provider   = helm.tokyo
+  name       = "aws-load-balancer-controller"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+  version    = "1.7.1"
+
+  set {
+    name  = "clusterName"
+    value = module.eks_tokyo.cluster_name
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.eks_tokyo.load_balancer_controller_iam_role_arn
+  }
+
+  set {
+    name  = "vpcId"
+    value = module.vpc_tokyo.vpc_id
+  }
+
+  set {
+    name  = "awsRegion"
+    value = "ap-northeast-1"
+  }
+
+  depends_on = [module.eks_tokyo]
+}

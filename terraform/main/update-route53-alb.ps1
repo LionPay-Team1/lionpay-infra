@@ -24,6 +24,7 @@
 
 param(
     [string]$ZoneName = "lionpay.shop",
+    [string]$Env = "dev",
     [string]$SeoulClusterName = "lionpay-dev-seoul",
     [string]$TokyoClusterName = "lionpay-dev-tokyo",
     [string]$IngressName = "lionpay-ingress",
@@ -131,7 +132,12 @@ Write-Host "`nUpdating Route53 latency routing records..." -ForegroundColor Yell
 
 # Determine RecordName
 if (-not $RecordName) {
-    $RecordName = "origin-api.$ZoneName"
+    if ($Env -eq "prod") {
+        $RecordName = "origin-api.$ZoneName"
+    }
+    else {
+        $RecordName = "origin-api.$Env.$ZoneName"
+    }
 }
 
 Write-Host "Target Record: $RecordName" -ForegroundColor Cyan
