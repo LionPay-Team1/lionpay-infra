@@ -55,10 +55,6 @@ variable "oac_name" {
   description = "Name for the shared Origin Access Control."
 }
 
-variable "oac_description" {
-  type        = string
-  description = "Description for the shared Origin Access Control."
-}
 
 variable "price_class" {
   type        = string

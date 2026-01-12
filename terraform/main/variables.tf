@@ -268,15 +268,6 @@ variable "cloudfront_api_ordered_origin_id_override" {
   default     = null
 }
 
-variable "cloudfront_oac_name" {
-  description = "Origin Access Control name."
-  type        = string
-}
-
-variable "cloudfront_oac_description" {
-  description = "Origin Access Control description."
-  type        = string
-}
 
 variable "cloudfront_price_class" {
   description = "CloudFront price class."

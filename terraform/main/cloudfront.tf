@@ -17,6 +17,9 @@ locals {
 
   # Origin domain for ALB (latency routing)
   origin_api_domain = "origin-api.${local.base_domain}"
+
+  # Deterministic, env-based OAC name (do not pin in tfvars)
+  cloudfront_oac_name = "${var.project_name}-${var.env}-oac-${replace(var.route53_zone_name, ".", "-")}"
 }
 
 module "cloudfront" {
@@ -36,9 +39,8 @@ module "cloudfront" {
   admin_acm_arn = var.cloudfront_acm_arn
   api_acm_arn   = var.cloudfront_acm_arn
 
-  oac_name        = var.cloudfront_oac_name
-  oac_description = var.cloudfront_oac_description
-  price_class     = var.cloudfront_price_class
+  oac_name    = local.cloudfront_oac_name
+  price_class = var.cloudfront_price_class
 
   app_tags   = var.cloudfront_app_tags
   admin_tags = var.cloudfront_admin_tags
