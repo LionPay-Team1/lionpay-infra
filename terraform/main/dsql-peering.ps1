@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
     Peers two existing Amazon Aurora DSQL clusters in different regions using their ARNs.
@@ -23,16 +24,16 @@
 #>
 
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$Cluster1Arn,
 
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$Cluster2Arn,
 
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$WitnessRegion,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$AwsProfile
 )
 
@@ -93,7 +94,7 @@ function Get-ClusterDetailsFromArn {
 
     return @{
         Region = $region
-        Id = $id
+        Id     = $id
     }
 }
 
@@ -112,7 +113,7 @@ try {
     Write-Host "`n[Step 3] Updating Cluster 1 ($($c1.Id)) to peer with Cluster 2..." -ForegroundColor Cyan
     $prop1 = @{
         witnessRegion = $WitnessRegion
-        clusters = @($Cluster2Arn)
+        clusters      = @($Cluster2Arn)
     } | ConvertTo-Json -Compress
     
     # Escape double quotes for AWS CLI when passed via PowerShell's argument list
@@ -126,7 +127,7 @@ try {
     Write-Host "`n[Step 4] Updating Cluster 2 ($($c2.Id)) to peer with Cluster 1..." -ForegroundColor Cyan
     $prop2 = @{
         witnessRegion = $WitnessRegion
-        clusters = @($Cluster1Arn)
+        clusters      = @($Cluster1Arn)
     } | ConvertTo-Json -Compress
 
     # Escape double quotes for AWS CLI when passed via PowerShell's argument list

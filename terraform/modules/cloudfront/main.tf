@@ -1,6 +1,4 @@
-data "aws_s3_bucket" "frontend" {
-  bucket = var.s3_bucket_name
-}
+# S3 bucket info is passed directly from parent module to avoid data source lookup issues
 
 data "aws_cloudfront_cache_policy" "caching_disabled" {
   name = "Managed-CachingDisabled"
@@ -30,7 +28,6 @@ locals {
   origin_ids = {
     app_s3   = coalesce(var.app_s3_origin_id_override, "frontend-app")
     admin_s3 = coalesce(var.admin_s3_origin_id_override, "frontend-admin")
-    app_api  = coalesce(var.app_backend_origin_id_override, "app-backend-api")
     api_def  = coalesce(var.api_default_origin_id_override, "api-origin-default")
     api_api  = coalesce(var.api_ordered_origin_id_override, "api-origin-latency")
   }
@@ -46,39 +43,14 @@ resource "aws_cloudfront_distribution" "app" {
   web_acl_id          = var.app_web_acl_id
 
   origin {
-    domain_name              = data.aws_s3_bucket.frontend.bucket_regional_domain_name
+    domain_name              = var.s3_bucket_regional_domain_name
     origin_id                = local.origin_ids.app_s3
     origin_path              = "/app"
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
   }
 
-  origin {
-    domain_name = var.app_backend_origin_domain_name
-    origin_id   = local.origin_ids.app_api
-
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      ip_address_type        = "ipv4"
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2"]
-    }
-  }
-
   default_cache_behavior {
     target_origin_id       = local.origin_ids.app_s3
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = local.allowed_methods_all
-    cached_methods         = local.cached_methods_basic
-    compress               = true
-
-    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
-    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
-  }
-
-  ordered_cache_behavior {
-    path_pattern           = "/v1/*"
-    target_origin_id       = local.origin_ids.app_api
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = local.allowed_methods_all
     cached_methods         = local.cached_methods_basic
@@ -108,10 +80,6 @@ resource "aws_cloudfront_distribution" "app" {
   }
 
   tags = var.app_tags
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_cloudfront_distribution" "admin" {
@@ -124,7 +92,7 @@ resource "aws_cloudfront_distribution" "admin" {
   web_acl_id          = var.admin_web_acl_id
 
   origin {
-    domain_name              = data.aws_s3_bucket.frontend.bucket_regional_domain_name
+    domain_name              = var.s3_bucket_regional_domain_name
     origin_id                = local.origin_ids.admin_s3
     origin_path              = "/management"
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
@@ -167,10 +135,6 @@ resource "aws_cloudfront_distribution" "admin" {
   }
 
   tags = var.admin_tags
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_cloudfront_distribution" "api" {
@@ -245,14 +209,10 @@ resource "aws_cloudfront_distribution" "api" {
   }
 
   tags = var.api_tags
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_s3_bucket_policy" "frontend_oac" {
-  bucket = data.aws_s3_bucket.frontend.id
+  bucket = var.s3_bucket_id
   policy = jsonencode({
     Id      = "PolicyForCloudFrontPrivateContent"
     Version = "2008-10-17"
@@ -264,7 +224,7 @@ resource "aws_s3_bucket_policy" "frontend_oac" {
           Service = "cloudfront.amazonaws.com"
         }
         Action   = "s3:GetObject"
-        Resource = "${data.aws_s3_bucket.frontend.arn}/*"
+        Resource = "${var.s3_bucket_arn}/*"
         Condition = {
           StringEquals = {
             "AWS:SourceArn" = aws_cloudfront_distribution.app.arn
@@ -278,7 +238,7 @@ resource "aws_s3_bucket_policy" "frontend_oac" {
           Service = "cloudfront.amazonaws.com"
         }
         Action   = "s3:GetObject"
-        Resource = "${data.aws_s3_bucket.frontend.arn}/*"
+        Resource = "${var.s3_bucket_arn}/*"
         Condition = {
           StringEquals = {
             "AWS:SourceArn" = aws_cloudfront_distribution.admin.arn

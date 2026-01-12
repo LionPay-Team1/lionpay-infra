@@ -66,3 +66,8 @@ output "karpenter_instance_profile_arn" {
   description = "ARN of the instance profile for Karpenter nodes"
   value       = aws_iam_instance_profile.karpenter.arn
 }
+
+output "load_balancer_controller_iam_role_arn" {
+  description = "ARN of the IAM role for AWS Load Balancer Controller"
+  value       = module.load_balancer_controller_iam_role.iam_role_arn
+}

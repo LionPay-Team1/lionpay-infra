@@ -16,42 +16,11 @@ resource "aws_route53_record" "lionpay_apex_a" {
   name    = var.zone_name
   type    = "A"
 
-  lifecycle {
-    prevent_destroy = true
-  }
-
   alias {
     name                   = "${var.app_cloudfront_domain_name}."
     zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
   }
-}
-
-resource "aws_route53_record" "lionpay_apex_ns" {
-  zone_id = aws_route53_zone.lionpay.zone_id
-  name    = var.zone_name
-  type    = "NS"
-  ttl     = 172800
-  records = [
-    "ns-1127.awsdns-12.org.",
-    "ns-1941.awsdns-50.co.uk.",
-    "ns-119.awsdns-14.com.",
-    "ns-740.awsdns-28.net.",
-  ]
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "aws_route53_record" "lionpay_apex_soa" {
-  zone_id = aws_route53_zone.lionpay.zone_id
-  name    = var.zone_name
-  type    = "SOA"
-  ttl     = 900
-  records = [
-    "ns-1127.awsdns-12.org. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400"
-  ]
 
   lifecycle {
     prevent_destroy = true
@@ -77,14 +46,14 @@ resource "aws_route53_record" "admin_a" {
   name    = "admin.${var.zone_name}"
   type    = "A"
 
-  lifecycle {
-    prevent_destroy = true
-  }
-
   alias {
     name                   = "${var.admin_cloudfront_domain_name}."
     zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -107,14 +76,14 @@ resource "aws_route53_record" "api_a" {
   name    = "api.${var.zone_name}"
   type    = "A"
 
-  lifecycle {
-    prevent_destroy = true
-  }
-
   alias {
     name                   = "${var.api_cloudfront_domain_name}."
     zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 

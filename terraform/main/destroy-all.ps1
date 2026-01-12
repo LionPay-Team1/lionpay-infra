@@ -59,7 +59,7 @@ function Write-Log {
 
 # Terraform output에서 클러스터 이름 가져오기
 function Get-TerraformOutputs {
-    Push-Location "$PSScriptRoot/main"
+    Push-Location "$PSScriptRoot"
     try {
         Write-Log "Terraform 초기화 및 워크스페이스 선택 중..." "INFO"
         terraform init -input=false 2>&1 | Out-Null
@@ -70,11 +70,21 @@ function Get-TerraformOutputs {
             return $null
         }
 
+        $outJson = (terraform output -json 2>$null)
+        if ($null -eq $outJson -or [string]::IsNullOrWhiteSpace($outJson) -or $outJson -match "No outputs found") {
+            return $null
+        }
+
+        $out = $outJson | ConvertFrom-Json
         $outputs = @{}
-        $outputs.SeoulCluster = (terraform output -raw seoul_cluster_name 2>$null)
-        $outputs.TokyoCluster = (terraform output -raw tokyo_cluster_name 2>$null)
+        
+        if ($out.seoul_cluster_name) { $outputs.SeoulCluster = $out.seoul_cluster_name.value }
+        if ($out.tokyo_cluster_name) { $outputs.TokyoCluster = $out.tokyo_cluster_name.value }
         
         return $outputs
+    }
+    catch {
+        return $null
     }
     finally {
         Pop-Location
@@ -99,12 +109,31 @@ function Remove-KarpenterResources {
     }
 
     Write-Log "Karpenter NodePool 삭제 중..." "INFO"
-    kubectl delete nodepools --all --ignore-not-found=true 2>&1 | Out-Null
+    kubectl delete nodepools --all --ignore-not-found=true --wait=false 2>&1 | Out-Null
 
     Write-Log "Karpenter EC2NodeClass 삭제 요청 중..." "INFO"
     kubectl delete ec2nodeclasses --all --ignore-not-found=true --wait=false 2>&1 | Out-Null
 
-    # EC2NodeClass finalizer 강제 제거 (삭제가 막힌 경우)
+    # Graceful delete waiting
+    Write-Log "Karpenter가 노드를 정리하도록 대기 중 (최대 120초)..." "INFO"
+    $gracefulTimeout = 120
+    $gracefulElapsed = 0
+    while ($gracefulElapsed -lt $gracefulTimeout) {
+        $remainingNodeclaims = kubectl get nodeclaims --no-headers 2>&1
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($remainingNodeclaims) -or $remainingNodeclaims -match "No resources found") {
+            Write-Log "모든 NodeClaim이 정상적으로 삭제되었습니다." "SUCCESS"
+            return $true
+        }
+        
+        $count = ($remainingNodeclaims | Measure-Object -Line).Lines
+        Write-Log "남은 NodeClaim: $count 개... ($gracefulElapsed/$gracefulTimeout 초)" "INFO"
+        Start-Sleep -Seconds 10
+        $gracefulElapsed += 10
+    }
+
+    Write-Log "Graceful delete 타임아웃. 강제 삭제 프로세스 시작." "WARN"
+
+    # EC2NodeClass finalizer 강제 제거
     Write-Log "EC2NodeClass finalizer 정리 중..." "INFO"
     $ec2NodeClasses = kubectl get ec2nodeclasses -o name 2>&1
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($ec2NodeClasses) -and $ec2NodeClasses -notmatch "No resources found") {
@@ -128,20 +157,18 @@ function Remove-KarpenterResources {
         Write-Log "NodeClaim finalizer 제거 완료" "SUCCESS"
     }
 
-    Write-Log "NodeClaim 정리 대기 중 (최대 60초)..." "INFO"
-    $timeout = 60
+    # 강제 제거 후 대기
+    Write-Log "강제 삭제 후 확인 대기 중..." "INFO"
+    $timeout = 30
     $elapsed = 0
     while ($elapsed -lt $timeout) {
         $remainingNodeclaims = kubectl get nodeclaims --no-headers 2>&1
         if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($remainingNodeclaims) -or $remainingNodeclaims -match "No resources found") {
-            Write-Log "모든 NodeClaim 삭제 완료" "SUCCESS"
             return $true
         }
-        Start-Sleep -Seconds 10
-        $elapsed += 10
-        Write-Log "NodeClaim 삭제 대기 중... ($elapsed/$timeout 초)" "INFO"
+        Start-Sleep -Seconds 5
+        $elapsed += 5
     }
-    Write-Log "NodeClaim 삭제 타임아웃 - 일부 리소스가 남아있을 수 있음" "WARN"
     return $true
 }
 
@@ -233,24 +260,39 @@ function Remove-OrphanedResources {
 
     Write-Log "Orphaned EC2 인스턴스 확인 ($Region)..." "INFO"
     
-    $instances = aws ec2 describe-instances `
-        --region $Region `
-        --filters "Name=tag:karpenter.sh/nodepool,Values=*" "Name=instance-state-name,Values=running,pending" `
-        --query "Reservations[].Instances[].InstanceId" `
-        --output text `
-        --no-cli-pager 2>&1
+    # 여러 태그 패턴으로 검색
+    # 1. karpenter.sh/nodepool (New)
+    # 2. karpenter.sh/provisioner-name (Old)
+    # 3. Name 태그에 'karpenter-node' 포함
+    
+    $filters = "Name=instance-state-name,Values=running,pending"
+    
+    # 각각 검색해서 합치기
+    $ids = @()
+    
+    # Filter 1: Nodepool
+    $list1 = aws ec2 describe-instances --region $Region --filters $filters "Name=tag-key,Values=karpenter.sh/nodepool" --query "Reservations[].Instances[].InstanceId" --output text --no-cli-pager 2>&1
+    if ($LASTEXITCODE -eq 0 -and $list1 -ne "None") { $ids += ($list1 -split "\s+") }
 
-    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($instances) -and $instances -ne "None") {
-        $instanceIds = ($instances -split "\s+") | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-        if ($instanceIds.Count -gt 0) {
-            Write-Log "Orphaned 인스턴스 $($instanceIds.Count)개 종료 중..." "WARN"
-            foreach ($id in $instanceIds) {
-                Write-Log "인스턴스 종료: $id" "INFO"
-                aws ec2 terminate-instances --instance-ids $id --region $Region --no-cli-pager 2>&1 | Out-Null
-            }
-            Write-Log "인스턴스 종료 대기 (30초)..." "INFO"
-            Start-Sleep -Seconds 30
+    # Filter 2: Provisioner Name (Legacy)
+    $list2 = aws ec2 describe-instances --region $Region --filters $filters "Name=tag-key,Values=karpenter.sh/provisioner-name" --query "Reservations[].Instances[].InstanceId" --output text --no-cli-pager 2>&1
+    if ($LASTEXITCODE -eq 0 -and $list2 -ne "None") { $ids += ($list2 -split "\s+") }
+
+    # Filter 3: Name tag pattern
+    $list3 = aws ec2 describe-instances --region $Region --filters $filters "Name=tag:Name,Values=*-karpenter-node" --query "Reservations[].Instances[].InstanceId" --output text --no-cli-pager 2>&1
+    if ($LASTEXITCODE -eq 0 -and $list3 -ne "None") { $ids += ($list3 -split "\s+") }
+
+    # 중복 제거 및 빈 값 제거
+    $uniqueIds = $ids | Select-Object -Unique | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+
+    if ($uniqueIds.Count -gt 0) {
+        Write-Log "Orphaned 인스턴스 $($uniqueIds.Count)개 종료 중..." "WARN"
+        foreach ($id in $uniqueIds) {
+            Write-Log "인스턴스 종료: $id" "INFO"
+            aws ec2 terminate-instances --instance-ids $id --region $Region --no-cli-pager 2>&1 | Out-Null
         }
+        Write-Log "인스턴스 종료 대기 (30초)..." "INFO"
+        Start-Sleep -Seconds 30
     }
     else {
         Write-Log "Orphaned 인스턴스 없음" "SUCCESS"
@@ -347,12 +389,12 @@ Remove-OrphanedResources -Region $TokyoRegion
 
 Write-Log "Phase 4: Terraform Destroy 실행" "PHASE"
 
-Push-Location "$PSScriptRoot/main"
+Push-Location "$PSScriptRoot"
 
 try {
     # tfvars 파일 체크
     if (-not (Test-Path "${Env}.tfvars")) {
-        Write-Log "'main/${Env}.tfvars' 파일이 존재하지 않습니다." "ERROR"
+        Write-Log "'${Env}.tfvars' 파일이 존재하지 않습니다." "ERROR"
         exit 1
     }
 

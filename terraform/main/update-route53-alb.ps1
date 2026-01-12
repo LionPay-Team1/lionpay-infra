@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
     Updates Route53 origin-api latency routing records with ALB DNS names.
@@ -26,7 +27,8 @@ param(
     [string]$SeoulClusterName = "lionpay-dev-seoul",
     [string]$TokyoClusterName = "lionpay-dev-tokyo",
     [string]$IngressName = "lionpay-ingress",
-    [string]$Namespace = "lionpay"
+    [string]$Namespace = "lionpay",
+    [string]$RecordName
 )
 
 $ErrorActionPreference = "Stop"
@@ -48,7 +50,7 @@ function Get-ALBDnsFromIngress {
     Write-Host "Getting ALB DNS from $ClusterName in $Region..." -ForegroundColor Cyan
     
     # Update kubeconfig
-    aws eks update-kubeconfig --name $ClusterName --region $Region --no-cli-pager 2>$null
+    aws eks update-kubeconfig --name $ClusterName --region $Region --no-cli-pager > $null
     
     # Get Ingress and extract ALB hostname
     $ingress = kubectl get ingress $IngressName -n $Namespace -o json 2>$null | ConvertFrom-Json
@@ -78,15 +80,15 @@ function Update-Route53LatencyRecord {
     $changeBatch = @{
         Changes = @(
             @{
-                Action = "UPSERT"
+                Action            = "UPSERT"
                 ResourceRecordSet = @{
-                    Name = $RecordName
-                    Type = "A"
+                    Name          = $RecordName
+                    Type          = "A"
                     SetIdentifier = $SetIdentifier
-                    Region = $Region
-                    AliasTarget = @{
-                        HostedZoneId = $AlbZoneId
-                        DNSName = "dualstack.$AlbDns"
+                    Region        = $Region
+                    AliasTarget   = @{
+                        HostedZoneId         = $AlbZoneId
+                        DNSName              = "dualstack.$AlbDns"
                         EvaluateTargetHealth = $true
                     }
                 }
@@ -127,9 +129,16 @@ $tokyoAlbDns = Get-ALBDnsFromIngress `
 # Update Route53 records
 Write-Host "`nUpdating Route53 latency routing records..." -ForegroundColor Yellow
 
+# Determine RecordName
+if (-not $RecordName) {
+    $RecordName = "origin-api.$ZoneName"
+}
+
+Write-Host "Target Record: $RecordName" -ForegroundColor Cyan
+
 Update-Route53LatencyRecord `
     -ZoneId $zoneId `
-    -RecordName "origin-api.$ZoneName" `
+    -RecordName $RecordName `
     -AlbDns $seoulAlbDns `
     -AlbZoneId $ELB_ZONE_IDS["ap-northeast-2"] `
     -Region "ap-northeast-2" `
@@ -137,7 +146,7 @@ Update-Route53LatencyRecord `
 
 Update-Route53LatencyRecord `
     -ZoneId $zoneId `
-    -RecordName "origin-api.$ZoneName" `
+    -RecordName $RecordName `
     -AlbDns $tokyoAlbDns `
     -AlbZoneId $ELB_ZONE_IDS["ap-northeast-1"] `
     -Region "ap-northeast-1" `

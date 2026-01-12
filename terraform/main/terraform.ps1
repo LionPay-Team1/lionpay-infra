@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 param (
     [Parameter(Mandatory = $true, Position = 0)]
     [string]$Command,
@@ -12,7 +13,7 @@ param (
     [switch]$Auto
 )
 
-Push-Location "$PSScriptRoot\main"
+Push-Location "$PSScriptRoot"
 [Console]::ResetColor()
 
 try {
