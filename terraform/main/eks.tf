@@ -44,6 +44,8 @@ module "eks_seoul" {
 
 
   tags = local.tags
+
+  depends_on = [module.vpc_seoul]
 }
 
 # Tokyo Cluster - Service Spoke
@@ -72,6 +74,8 @@ module "eks_tokyo" {
 
 
   tags = local.tags
+
+  depends_on = [module.vpc_tokyo]
 }
 
 ###############################################################
@@ -189,6 +193,8 @@ module "karpenter_seoul" {
   node_iam_role_arn         = module.eks_seoul.karpenter_node_iam_role_arn
 
   tags = local.tags
+
+  depends_on = [module.eks_seoul]
 }
 
 module "karpenter_tokyo" {
@@ -205,6 +211,8 @@ module "karpenter_tokyo" {
   node_iam_role_arn         = module.eks_tokyo.karpenter_node_iam_role_arn
 
   tags = local.tags
+
+  depends_on = [module.eks_tokyo]
 }
 
 ###############################################################
@@ -223,6 +231,10 @@ resource "local_file" "karpenter_seoul_manifest" {
 resource "null_resource" "karpenter_seoul_apply" {
   triggers = {
     manifest_sha1 = sha1(local_file.karpenter_seoul_manifest.content)
+    cluster_name  = module.eks_seoul.cluster_name
+    region        = "ap-northeast-2"
+    manifest_file = local_file.karpenter_seoul_manifest.filename
+    kubeconfig    = "${path.module}/.terraform/kubeconfig_seoul"
   }
 
   # 1. Update Kubeconfig
@@ -241,6 +253,21 @@ resource "null_resource" "karpenter_seoul_apply" {
     }
   }
 
+  # 3. Delete Manifest on Destroy
+  provisioner "local-exec" {
+    when       = destroy
+    command    = <<-EOT
+      CLUSTER_NAME="${try(self.triggers.cluster_name, "")}"
+      REGION="${try(self.triggers.region, "ap-northeast-2")}"
+      MANIFEST_FILE="${try(self.triggers.manifest_file, "")}"
+      if [ -n "$CLUSTER_NAME" ] && [ -n "$MANIFEST_FILE" ]; then
+        aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" || true
+        kubectl delete -f "$MANIFEST_FILE" --ignore-not-found || true
+      fi
+    EOT
+    on_failure = continue
+  }
+
   depends_on = [module.karpenter_seoul]
 }
 
@@ -256,6 +283,10 @@ resource "local_file" "karpenter_tokyo_manifest" {
 resource "null_resource" "karpenter_tokyo_apply" {
   triggers = {
     manifest_sha1 = sha1(local_file.karpenter_tokyo_manifest.content)
+    cluster_name  = module.eks_tokyo.cluster_name
+    region        = "ap-northeast-1"
+    manifest_file = local_file.karpenter_tokyo_manifest.filename
+    kubeconfig    = "${path.module}/.terraform/kubeconfig_tokyo"
   }
 
   # 1. Update Kubeconfig
@@ -272,6 +303,21 @@ resource "null_resource" "karpenter_tokyo_apply" {
     environment = {
       KUBECONFIG = "${path.module}/.terraform/kubeconfig_tokyo"
     }
+  }
+
+  # 3. Delete Manifest on Destroy
+  provisioner "local-exec" {
+    when       = destroy
+    command    = <<-EOT
+      CLUSTER_NAME="${try(self.triggers.cluster_name, "")}"
+      REGION="${try(self.triggers.region, "ap-northeast-1")}"
+      MANIFEST_FILE="${try(self.triggers.manifest_file, "")}"
+      if [ -n "$CLUSTER_NAME" ] && [ -n "$MANIFEST_FILE" ]; then
+        aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" || true
+        kubectl delete -f "$MANIFEST_FILE" --ignore-not-found || true
+      fi
+    EOT
+    on_failure = continue
   }
 
   depends_on = [module.karpenter_tokyo]
@@ -306,6 +352,8 @@ module "monitoring_seoul" {
   fleetmanagement_url      = var.fleetmanagement_url
   fleetmanagement_username = var.fleetmanagement_username
   fleetmanagement_password = var.fleetmanagement_password
+
+  depends_on = [module.eks_seoul]
 }
 
 module "monitoring_tokyo" {
@@ -333,6 +381,8 @@ module "monitoring_tokyo" {
   fleetmanagement_url      = var.fleetmanagement_url
   fleetmanagement_username = var.fleetmanagement_username
   fleetmanagement_password = var.fleetmanagement_password
+
+  depends_on = [module.eks_tokyo]
 }
 
 ###############################################################
@@ -419,4 +469,84 @@ resource "helm_release" "aws_load_balancer_controller_tokyo" {
   }
 
   depends_on = [module.eks_tokyo]
+}
+
+###############################################################
+# Ingress Cleanup - Delete Ingresses before LB Controller is removed
+###############################################################
+
+resource "null_resource" "ingress_cleanup_seoul" {
+  triggers = {
+    cluster_name = module.eks_seoul.cluster_name
+    region       = "ap-northeast-2"
+  }
+
+  # Destroy 시 Ingress 삭제 (ALB Controller가 삭제되기 전에 실행)
+  provisioner "local-exec" {
+    when       = destroy
+    command    = <<-EOT
+      CLUSTER_NAME="${try(self.triggers.cluster_name, "")}"
+      REGION="${try(self.triggers.region, "ap-northeast-2")}"
+      
+      if [ -n "$CLUSTER_NAME" ]; then
+        echo "Updating kubeconfig for $CLUSTER_NAME..."
+        aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" || true
+        
+        echo "Deleting all Ingress resources..."
+        kubectl delete ingress --all -A --ignore-not-found || true
+        
+        echo "Waiting for ALB cleanup (60 seconds)..."
+        sleep 60
+        
+        echo "Cleaning up orphaned ALB Security Groups..."
+        for sg in $(aws ec2 describe-security-groups --region "$REGION" \
+          --filters "Name=tag-key,Values=elbv2.k8s.aws/cluster" \
+          --query "SecurityGroups[].GroupId" --output text 2>/dev/null); do
+          echo "Deleting Security Group: $sg"
+          aws ec2 delete-security-group --group-id "$sg" --region "$REGION" 2>/dev/null || true
+        done
+      fi
+    EOT
+    on_failure = continue
+  }
+
+  depends_on = [helm_release.aws_load_balancer_controller_seoul]
+}
+
+resource "null_resource" "ingress_cleanup_tokyo" {
+  triggers = {
+    cluster_name = module.eks_tokyo.cluster_name
+    region       = "ap-northeast-1"
+  }
+
+  # Destroy 시 Ingress 삭제 (ALB Controller가 삭제되기 전에 실행)
+  provisioner "local-exec" {
+    when       = destroy
+    command    = <<-EOT
+      CLUSTER_NAME="${try(self.triggers.cluster_name, "")}"
+      REGION="${try(self.triggers.region, "ap-northeast-1")}"
+      
+      if [ -n "$CLUSTER_NAME" ]; then
+        echo "Updating kubeconfig for $CLUSTER_NAME..."
+        aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" || true
+        
+        echo "Deleting all Ingress resources..."
+        kubectl delete ingress --all -A --ignore-not-found || true
+        
+        echo "Waiting for ALB cleanup (60 seconds)..."
+        sleep 60
+        
+        echo "Cleaning up orphaned ALB Security Groups..."
+        for sg in $(aws ec2 describe-security-groups --region "$REGION" \
+          --filters "Name=tag-key,Values=elbv2.k8s.aws/cluster" \
+          --query "SecurityGroups[].GroupId" --output text 2>/dev/null); do
+          echo "Deleting Security Group: $sg"
+          aws ec2 delete-security-group --group-id "$sg" --region "$REGION" 2>/dev/null || true
+        done
+      fi
+    EOT
+    on_failure = continue
+  }
+
+  depends_on = [helm_release.aws_load_balancer_controller_tokyo]
 }

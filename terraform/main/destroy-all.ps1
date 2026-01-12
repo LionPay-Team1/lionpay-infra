@@ -6,11 +6,12 @@
 .DESCRIPTION
     이 스크립트는 다음 순서로 리소스를 정리합니다:
     1. Terraform output에서 클러스터 정보 조회
-    2. Seoul/Tokyo 클러스터의 Karpenter 리소스 정리
-    3. LoadBalancer/Ingress 리소스 삭제 (ALB, TargetGroup 포함)
-    4. Terminating 상태의 네임스페이스 강제 정리
-    5. Orphaned EC2 인스턴스 종료
-    6. Terraform destroy 실행
+    2. Seoul/Tokyo 클러스터의 Ingress 리소스 삭제 (ALB 정리)
+    3. Orphaned ALB/Target Group/Security Group 정리
+    4. Terraform destroy 실행
+
+    참고: Karpenter, ArgoCD 리소스는 Terraform의 null_resource destroy
+    provisioner에서 자동으로 정리됩니다.
 
 .PARAMETER Env
     삭제할 환경 이름 (예: dev, prod)
@@ -98,9 +99,9 @@ function Test-ClusterExists {
     return $LASTEXITCODE -eq 0
 }
 
-function Remove-KarpenterResources {
+function Remove-Ingresses {
     param([string]$ClusterName, [string]$Region)
-    
+
     Write-Log "Kubeconfig 업데이트: $ClusterName ($Region)" "INFO"
     aws eks update-kubeconfig --name $ClusterName --region $Region --no-cli-pager 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
@@ -108,86 +109,28 @@ function Remove-KarpenterResources {
         return $false
     }
 
-    Write-Log "Karpenter NodePool 삭제 중..." "INFO"
-    kubectl delete nodepools --all --ignore-not-found=true --wait=false 2>&1 | Out-Null
-
-    Write-Log "Karpenter EC2NodeClass 삭제 요청 중..." "INFO"
-    kubectl delete ec2nodeclasses --all --ignore-not-found=true --wait=false 2>&1 | Out-Null
-
-    # Graceful delete waiting
-    Write-Log "Karpenter가 노드를 정리하도록 대기 중 (최대 120초)..." "INFO"
-    $gracefulTimeout = 120
-    $gracefulElapsed = 0
-    while ($gracefulElapsed -lt $gracefulTimeout) {
-        $remainingNodeclaims = kubectl get nodeclaims --no-headers 2>&1
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($remainingNodeclaims) -or $remainingNodeclaims -match "No resources found") {
-            Write-Log "모든 NodeClaim이 정상적으로 삭제되었습니다." "SUCCESS"
-            return $true
-        }
-        
-        $count = ($remainingNodeclaims | Measure-Object -Line).Lines
-        Write-Log "남은 NodeClaim: $count 개... ($gracefulElapsed/$gracefulTimeout 초)" "INFO"
-        Start-Sleep -Seconds 10
-        $gracefulElapsed += 10
-    }
-
-    Write-Log "Graceful delete 타임아웃. 강제 삭제 프로세스 시작." "WARN"
-
-    # EC2NodeClass finalizer 강제 제거
-    Write-Log "EC2NodeClass finalizer 정리 중..." "INFO"
-    $ec2NodeClasses = kubectl get ec2nodeclasses -o name 2>&1
-    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($ec2NodeClasses) -and $ec2NodeClasses -notmatch "No resources found") {
-        $ec2NodeClasses -split "`n" | ForEach-Object {
-            if (-not [string]::IsNullOrWhiteSpace($_)) {
-                kubectl patch $_ --type merge -p '{"metadata":{"finalizers":null}}' 2>&1 | Out-Null
+    Write-Log "Ingress 리소스 삭제 중 (ALB 정리를 위해)..." "INFO"
+    
+    # 모든 Ingress 조회 및 삭제
+    $ingressesJson = kubectl get ingress --all-namespaces -o json 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        $ingresses = $ingressesJson | ConvertFrom-Json
+        if ($ingresses -and $ingresses.items -and $ingresses.items.Count -gt 0) {
+            foreach ($ing in $ingresses.items) {
+                $ns = $ing.metadata.namespace
+                $name = $ing.metadata.name
+                Write-Log "Ingress 삭제: $ns/$name" "INFO"
+                kubectl delete ingress $name -n $ns --ignore-not-found=true 2>&1 | Out-Null
             }
+            
+            Write-Log "AWS Load Balancer Controller가 ALB를 정리하도록 대기 (60초)..." "INFO"
+            Start-Sleep -Seconds 60
         }
-        Write-Log "EC2NodeClass finalizer 제거 완료" "SUCCESS"
-    }
-
-    # NodeClaim finalizer 강제 제거
-    Write-Log "NodeClaim finalizer 정리 중..." "INFO"
-    $nodeclaims = kubectl get nodeclaims -o name 2>&1
-    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($nodeclaims) -and $nodeclaims -notmatch "No resources found") {
-        $nodeclaims -split "`n" | ForEach-Object {
-            if (-not [string]::IsNullOrWhiteSpace($_)) {
-                kubectl patch $_ --type merge -p '{"metadata":{"finalizers":null}}' 2>&1 | Out-Null
-            }
+        else {
+            Write-Log "삭제할 Ingress가 없습니다." "INFO"
         }
-        Write-Log "NodeClaim finalizer 제거 완료" "SUCCESS"
-    }
-
-    # 강제 제거 후 대기
-    Write-Log "강제 삭제 후 확인 대기 중..." "INFO"
-    $timeout = 30
-    $elapsed = 0
-    while ($elapsed -lt $timeout) {
-        $remainingNodeclaims = kubectl get nodeclaims --no-headers 2>&1
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($remainingNodeclaims) -or $remainingNodeclaims -match "No resources found") {
-            return $true
-        }
-        Start-Sleep -Seconds 5
-        $elapsed += 5
     }
     return $true
-}
-
-function Force-RemoveFinalizers {
-    param([string]$ClusterName, [string]$Region)
-
-    Write-Log "Terminating 상태의 네임스페이스 확인 중..." "INFO"
-    $namespaces = kubectl get ns --field-selector=status.phase=Terminating -o jsonpath='{.items[*].metadata.name}' 2>&1
-    
-    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($namespaces)) {
-        $nsList = $namespaces -split "\s+"
-        foreach ($ns in $nsList) {
-            Write-Log "네임스페이스 '$ns' Finalizer 강제 제거 중..." "WARN"
-            # Finalizer 배열을 빈 배열로 패치
-            kubectl get namespace $ns -o json | `
-                ForEach-Object { $_ -replace '"finalizers": \[[^]]*\]', '"finalizers": []' } | `
-                kubectl replace --raw "/api/v1/namespaces/$ns/finalize" -f - 2>&1 | Out-Null
-        }
-    }
 }
 
 function Remove-OrphanedALB {
@@ -206,6 +149,9 @@ function Remove-OrphanedALB {
         Write-Log "ALB 삭제 완료 대기 (10초)..." "INFO"
         Start-Sleep -Seconds 10
     }
+    else {
+        Write-Log "Orphaned ALB 없음" "SUCCESS"
+    }
 
     # 2. Target Group 삭제
     Write-Log "Orphaned Target Group (k8s-lionpay-*) 확인 및 삭제..." "INFO"
@@ -217,10 +163,12 @@ function Remove-OrphanedALB {
             aws elbv2 delete-target-group --target-group-arn $arn --region $Region --no-cli-pager 2>&1 | Out-Null
         }
     }
+    else {
+        Write-Log "Orphaned Target Group 없음" "SUCCESS"
+    }
 
     # 3. Security Group 삭제 (Load Balancer 관련)
     Write-Log "Ingress 관련 Security Group 확인 및 삭제..." "INFO"
-    # k8s-lionpay와 backend-sg 태그가 있는 SG 검색
     $sgs = aws ec2 describe-security-groups --region $Region --filters "Name=tag-key,Values=elbv2.k8s.aws/cluster" --query "SecurityGroups[].GroupId" --output text --no-cli-pager 2>&1
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($sgs) -and $sgs -ne "None") {
         $sgIds = $sgs -split "\s+"
@@ -229,73 +177,8 @@ function Remove-OrphanedALB {
             aws ec2 delete-security-group --group-id $id --region $Region --no-cli-pager 2>&1 | Out-Null
         }
     }
-}
-
-function Remove-LoadBalancers {
-    param([string]$ClusterName, [string]$Region)
-
-    Write-Log "LoadBalancer 서비스 삭제 중..." "INFO"
-    
-    $servicesJson = kubectl get svc --all-namespaces -o json 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        $services = $servicesJson | ConvertFrom-Json
-        if ($services -and $services.items) {
-            foreach ($svc in $services.items) {
-                if ($svc.spec.type -eq "LoadBalancer") {
-                    $ns = $svc.metadata.namespace
-                    $name = $svc.metadata.name
-                    Write-Log "LoadBalancer 삭제: $ns/$name" "INFO"
-                    kubectl delete svc $name -n $ns --ignore-not-found=true 2>&1 | Out-Null
-                }
-            }
-        }
-    }
-
-    Write-Log "AWS LoadBalancer 정리 대기 (20초)..." "INFO"
-    Start-Sleep -Seconds 20
-}
-
-function Remove-OrphanedResources {
-    param([string]$Region)
-
-    Write-Log "Orphaned EC2 인스턴스 확인 ($Region)..." "INFO"
-    
-    # 여러 태그 패턴으로 검색
-    # 1. karpenter.sh/nodepool (New)
-    # 2. karpenter.sh/provisioner-name (Old)
-    # 3. Name 태그에 'karpenter-node' 포함
-    
-    $filters = "Name=instance-state-name,Values=running,pending"
-    
-    # 각각 검색해서 합치기
-    $ids = @()
-    
-    # Filter 1: Nodepool
-    $list1 = aws ec2 describe-instances --region $Region --filters $filters "Name=tag-key,Values=karpenter.sh/nodepool" --query "Reservations[].Instances[].InstanceId" --output text --no-cli-pager 2>&1
-    if ($LASTEXITCODE -eq 0 -and $list1 -ne "None") { $ids += ($list1 -split "\s+") }
-
-    # Filter 2: Provisioner Name (Legacy)
-    $list2 = aws ec2 describe-instances --region $Region --filters $filters "Name=tag-key,Values=karpenter.sh/provisioner-name" --query "Reservations[].Instances[].InstanceId" --output text --no-cli-pager 2>&1
-    if ($LASTEXITCODE -eq 0 -and $list2 -ne "None") { $ids += ($list2 -split "\s+") }
-
-    # Filter 3: Name tag pattern
-    $list3 = aws ec2 describe-instances --region $Region --filters $filters "Name=tag:Name,Values=*-karpenter-node" --query "Reservations[].Instances[].InstanceId" --output text --no-cli-pager 2>&1
-    if ($LASTEXITCODE -eq 0 -and $list3 -ne "None") { $ids += ($list3 -split "\s+") }
-
-    # 중복 제거 및 빈 값 제거
-    $uniqueIds = $ids | Select-Object -Unique | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-
-    if ($uniqueIds.Count -gt 0) {
-        Write-Log "Orphaned 인스턴스 $($uniqueIds.Count)개 종료 중..." "WARN"
-        foreach ($id in $uniqueIds) {
-            Write-Log "인스턴스 종료: $id" "INFO"
-            aws ec2 terminate-instances --instance-ids $id --region $Region --no-cli-pager 2>&1 | Out-Null
-        }
-        Write-Log "인스턴스 종료 대기 (30초)..." "INFO"
-        Start-Sleep -Seconds 30
-    }
     else {
-        Write-Log "Orphaned 인스턴스 없음" "SUCCESS"
+        Write-Log "Orphaned Security Group 없음" "SUCCESS"
     }
 }
 
@@ -343,51 +226,39 @@ else {
 }
 
 # ============================================================
-# Phase 1: Seoul 클러스터 정리
+# Phase 1: Ingress 삭제 (ALB 정리를 위해)
 # ============================================================
 
-Write-Log "Phase 1: Seoul 클러스터 Kubernetes 리소스 정리" "PHASE"
+Write-Log "Phase 1: Ingress 리소스 삭제 (ALB 정리)" "PHASE"
 
 if (Test-ClusterExists -ClusterName $SeoulCluster -Region $SeoulRegion) {
-    Remove-KarpenterResources -ClusterName $SeoulCluster -Region $SeoulRegion
-    Remove-LoadBalancers -ClusterName $SeoulCluster -Region $SeoulRegion
-    Force-RemoveFinalizers -ClusterName $SeoulCluster -Region $SeoulRegion
+    Remove-Ingresses -ClusterName $SeoulCluster -Region $SeoulRegion
 }
 else {
     Write-Log "Seoul 클러스터가 존재하지 않음. 스킵." "INFO"
 }
 
-# ============================================================
-# Phase 2: Tokyo 클러스터 정리
-# ============================================================
-
-Write-Log "Phase 2: Tokyo 클러스터 Kubernetes 리소스 정리" "PHASE"
-
 if (Test-ClusterExists -ClusterName $TokyoCluster -Region $TokyoRegion) {
-    Remove-KarpenterResources -ClusterName $TokyoCluster -Region $TokyoRegion
-    Remove-LoadBalancers -ClusterName $TokyoCluster -Region $TokyoRegion
-    Force-RemoveFinalizers -ClusterName $TokyoCluster -Region $TokyoRegion
+    Remove-Ingresses -ClusterName $TokyoCluster -Region $TokyoRegion
 }
 else {
     Write-Log "Tokyo 클러스터가 존재하지 않음. 스킵." "INFO"
 }
 
 # ============================================================
-# Phase 3: Orphaned AWS 리소스 정리
+# Phase 2: Orphaned AWS 리소스 정리
 # ============================================================
 
-Write-Log "Phase 3: Orphaned AWS 리소스 정리" "PHASE"
+Write-Log "Phase 2: Orphaned AWS 리소스 정리" "PHASE"
 
 Remove-OrphanedALB -Region $SeoulRegion
 Remove-OrphanedALB -Region $TokyoRegion
-Remove-OrphanedResources -Region $SeoulRegion
-Remove-OrphanedResources -Region $TokyoRegion
 
 # ============================================================
-# Phase 4: Terraform Destroy
+# Phase 3: Terraform Destroy
 # ============================================================
 
-Write-Log "Phase 4: Terraform Destroy 실행" "PHASE"
+Write-Log "Phase 3: Terraform Destroy 실행" "PHASE"
 
 Push-Location "$PSScriptRoot"
 
