@@ -21,7 +21,10 @@ resource "kubernetes_config_map_v1" "auth_config_seoul" {
     "OTEL_SERVICE_NAME"           = "auth"
   }
 
-  depends_on = [module.eks_seoul]
+  depends_on = [
+    module.eks_seoul,
+    kubernetes_namespace_v1.lionpay_seoul
+  ]
 }
 
 resource "kubernetes_config_map_v1" "wallet_config_seoul" {
@@ -43,7 +46,10 @@ resource "kubernetes_config_map_v1" "wallet_config_seoul" {
     "Dsql__Region"                = "ap-northeast-2"
   }
 
-  depends_on = [module.eks_seoul]
+  depends_on = [
+    module.eks_seoul,
+    kubernetes_namespace_v1.lionpay_seoul
+  ]
 }
 
 # Tokyo Cluster (Spoke)
@@ -65,7 +71,10 @@ resource "kubernetes_config_map_v1" "auth_config_tokyo" {
     "OTEL_SERVICE_NAME"           = "auth"
   }
 
-  depends_on = [module.eks_tokyo]
+  depends_on = [
+    module.eks_tokyo,
+    kubernetes_namespace_v1.lionpay_tokyo
+  ]
 }
 
 resource "kubernetes_config_map_v1" "wallet_config_tokyo" {
@@ -87,5 +96,8 @@ resource "kubernetes_config_map_v1" "wallet_config_tokyo" {
     "Dsql__Region"                = "ap-northeast-1"
   }
 
-  depends_on = [module.eks_tokyo]
+  depends_on = [
+    module.eks_tokyo,
+    kubernetes_namespace_v1.lionpay_tokyo
+  ]
 }

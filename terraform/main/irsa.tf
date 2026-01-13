@@ -150,7 +150,10 @@ resource "kubernetes_service_account_v1" "lionpay_app_seoul" {
     }
   }
 
-  depends_on = [module.eks_seoul]
+  depends_on = [
+    module.eks_seoul,
+    kubernetes_namespace_v1.lionpay_seoul
+  ]
 }
 
 resource "kubernetes_service_account_v1" "lionpay_app_tokyo" {
@@ -164,5 +167,8 @@ resource "kubernetes_service_account_v1" "lionpay_app_tokyo" {
     }
   }
 
-  depends_on = [module.eks_tokyo]
+  depends_on = [
+    module.eks_tokyo,
+    kubernetes_namespace_v1.lionpay_tokyo
+  ]
 }

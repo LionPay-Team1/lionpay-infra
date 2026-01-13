@@ -17,7 +17,10 @@ resource "kubernetes_secret_v1" "app_secrets_seoul" {
 
   type = "Opaque"
 
-  depends_on = [module.eks_seoul]
+  depends_on = [
+    module.eks_seoul,
+    kubernetes_namespace_v1.lionpay_seoul
+  ]
 }
 
 # Tokyo Cluster (Spoke) - App Secrets
@@ -35,5 +38,8 @@ resource "kubernetes_secret_v1" "app_secrets_tokyo" {
 
   type = "Opaque"
 
-  depends_on = [module.eks_tokyo]
+  depends_on = [
+    module.eks_tokyo,
+    kubernetes_namespace_v1.lionpay_tokyo
+  ]
 }

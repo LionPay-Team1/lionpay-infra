@@ -93,10 +93,14 @@ resource "aws_iam_role" "argocd_capability" {
         Principal = {
           Service = "capabilities.eks.amazonaws.com"
         }
-        Action = [
-          "sts:AssumeRole",
-          "sts:TagSession"
-        ]
+        Action = "sts:AssumeRole"
+      },
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "capabilities.eks.amazonaws.com"
+        }
+        Action = "sts:TagSession"
       }
     ]
   })
@@ -395,7 +399,7 @@ resource "helm_release" "aws_load_balancer_controller_seoul" {
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
-  version    = "1.7.1"
+  version    = "1.8.0"
 
   set {
     name  = "clusterName"
