@@ -1,5 +1,15 @@
 # lionpay-infra
 
+라이언페이 프로젝트의 인프라 레포지토리입니다.
+
+## 프로젝트 발표 자료 및 데모 시연
+
+[발표 자료](https://drive.google.com/file/d/1m9ge1XXYNjOAcIFfBG-N4MBmrcipJQ9r/view?usp=sharing)
+
+[애플리케이션 시연](https://drive.google.com/file/d/1Za35dH6pO44PpVWxEdi6_srq-kaMoJCC/view?usp=sharing)
+
+[관리자 대시보드 시연](https://drive.google.com/file/d/1WrD_5JAzMUc7Si-cgEeQYQI9Syr2tApI/view?usp=sharing)
+
 ## Terraform 백엔드 설정
 
 이 프로젝트는 Terraform 상태 저장 및 잠금을 위해 AWS S3와 DynamoDB를 사용합니다.
